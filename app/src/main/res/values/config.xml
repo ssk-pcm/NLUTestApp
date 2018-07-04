@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Watson Natural Language Understanding -->
+    <string name="workspace_id"></string>
+    <string name="nlu_username">aef6fb8f-250a-46dd-bfd9-15d9a29db8d0</string>
+    <string name="nlu_password">vCZotgxgS2uF</string>
+
+</resources>
