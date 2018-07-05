@@ -71,6 +71,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 Intent intent = new Intent(MainActivity.this, ImageActivity.class);
+                intent.putExtra("word",res1);
                 startActivity(intent);
             }
         });
@@ -133,15 +134,6 @@ public class MainActivity extends AppCompatActivity {
     protected void onDestroy() {
 
         super.onDestroy();
-    }
-
-    private TestTask.Listener createListener() {
-        return new TestTask.Listener() {
-            @Override
-            public void onSuccess(int count) {
-                text1.setText(String.valueOf(count));
-            }
-        };
     }
 
     private void speech(){

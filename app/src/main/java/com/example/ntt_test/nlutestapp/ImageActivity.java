@@ -1,8 +1,10 @@
 package com.example.ntt_test.nlutestapp;
 
+import android.content.Intent;
 import android.os.Handler;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.widget.ImageView;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -30,15 +32,19 @@ public class ImageActivity extends AppCompatActivity {
     // the endpoint for your Bing Web search instance in your Azure dashboard.
     static String host = "https://api.cognitive.microsoft.com";
     static String path = "/bing/v7.0/images/search";
-
     static String searchTerm = "puppies";
+    private String search;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_image);
+        ImageView imageView = (ImageView) findViewById(R.id.imageView);
 
-        TestTask test = new TestTask();
-        test.execute();
+        Intent intent = getIntent();
+        search = intent.getStringExtra("word");
+
+        TestTask test = new TestTask(imageView);
+        test.execute(search);
     }
 }

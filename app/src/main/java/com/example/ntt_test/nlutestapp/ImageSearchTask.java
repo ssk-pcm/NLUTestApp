@@ -1,14 +1,20 @@
 package com.example.ntt_test.nlutestapp;
 
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.AsyncTask;
 import android.os.Handler;
 import android.util.Log;
+import android.widget.ImageView;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
+import org.json.JSONObject;
+
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.net.URLEncoder;
@@ -19,7 +25,7 @@ import java.util.Scanner;
 
 import javax.net.ssl.HttpsURLConnection;
 
-public class TestTask extends AsyncTask<Integer, Integer, Integer> {
+public class TestTask extends AsyncTask<String, Void, Bitmap> {
 
     // Replace the subscriptionKey string value with your valid subscription key.
     static String subscriptionKey = "678a4900e849413380f04c00066662a5";
@@ -30,42 +36,48 @@ public class TestTask extends AsyncTask<Integer, Integer, Integer> {
     // the endpoint for your Bing Web search instance in your Azure dashboard.
     static String host = "https://api.cognitive.microsoft.com";
     static String path = "/bing/v7.0/images/search";
+    private ImageView mImageView;
+    private Bitmap thumbnail;
+//    static String searchTerm = "タイヤ";
 
-    static String searchTerm = "星空凛";
+    static JsonObject resultObject;
 
-
-    private Listener listener;
+    public TestTask(ImageView imageView) {
+        mImageView = imageView;
+    }
 
     // 非同期処理
     @Override
-    protected Integer doInBackground(Integer... params) {
-        imageGet();
-        return null;
-    }
+    protected Bitmap doInBackground(String... params) {
+        //画像検索
+        imageGet(params[0]);
 
-    // 途中経過をメインスレッドに返す
-    @Override
-    protected void onProgressUpdate(Integer... progress) {
-        if (listener != null) {
-            listener.onSuccess(progress[0]);
+        try {
+            System.out.println("result : " + resultObject.getAsJsonArray("value").get(0).getAsJsonObject().get("thumbnailUrl"));
+            //画像検索で出てきた1番目の画像のサムネイルを返す
+            String m = resultObject.getAsJsonArray("value").get(0).getAsJsonObject().get("thumbnailUrl").toString();
+
+            //画像のURLからBitmapを作成
+            String hoge =resultObject.getAsJsonArray("value").get(0).getAsJsonObject().get("thumbnailUrl").toString();
+            hoge = hoge.replaceAll("\"","");
+            URL url = new URL(hoge);
+            //インプットストリームで画像を読み込む
+            InputStream istream = url.openStream();
+            //読み込んだファイルをビットマップに変換
+            thumbnail = BitmapFactory.decodeStream(istream);
+            //インプットストリームを閉じる
+            istream.close();
+        } catch (IOException e) {
+            System.out.println("error");
         }
+        return thumbnail;
     }
 
     // 非同期処理が終了後、結果をメインスレッドに返す
     @Override
-    protected void onPostExecute(Integer result) {
-        if (listener != null) {
-            listener.onSuccess(result);
-        }
-    }
-
-
-    void setListener(Listener listener) {
-        this.listener = listener;
-    }
-
-    interface Listener {
-        void onSuccess(int count);
+    protected void onPostExecute(Bitmap result) {
+        final ImageView imageView = mImageView;
+        imageView.setImageBitmap(result);
     }
 
     public static SearchResults SearchImages(String searchQuery) throws Exception {
@@ -103,7 +115,7 @@ public class TestTask extends AsyncTask<Integer, Integer, Integer> {
     }
 
 
-    public static void imageGet() {
+    public static void imageGet(String searchTerm) {
         if (subscriptionKey.length() != 32) {
             System.out.println("Invalid Bing Search API subscription key!");
             System.out.println("Please paste yours into the source code.");
@@ -122,6 +134,9 @@ public class TestTask extends AsyncTask<Integer, Integer, Integer> {
 
             System.out.println("\nJSON Response:\n");
             System.out.println(prettify(result.jsonResponse));
+
+            JsonParser parser = new JsonParser();
+            resultObject = parser.parse(result.jsonResponse).getAsJsonObject();
         } catch (Exception e) {
             e.printStackTrace(System.out);
             System.exit(1);
@@ -131,9 +146,10 @@ public class TestTask extends AsyncTask<Integer, Integer, Integer> {
 }
 
 // Container class for search results encapsulates relevant headers and JSON data
-class SearchResults{
+class SearchResults {
     HashMap<String, String> relevantHeaders;
     String jsonResponse;
+
     SearchResults(HashMap<String, String> headers, String json) {
         relevantHeaders = headers;
         jsonResponse = json;
