@@ -26,6 +26,8 @@ dependencies {
     implementation 'com.google.code.gson:gson:2.8.0'
     androidTestImplementation 'com.android.support.test:runner:1.0.2'
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
-    implementation'com.ibm.watson.developer_cloud:java-sdk:5.4.0'
+    implementation 'com.ibm.watson.developer_cloud:java-sdk:5.4.0'
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.3.4'
+    // API叩く用
+    implementation 'com.squareup.okhttp3:okhttp:3.10.0'
 }

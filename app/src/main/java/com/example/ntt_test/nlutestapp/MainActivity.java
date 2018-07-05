@@ -9,6 +9,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.google.gson.Gson;
@@ -53,6 +54,7 @@ public class MainActivity extends AppCompatActivity {
         text3 = findViewById(R.id.result3);
         text4 = findViewById(R.id.result4);
         Button buttonStart = findViewById(R.id.button_start);
+        Button next = findViewById(R.id.button);
 
         // 言語選択 0:日本語、1:英語、2:オフライン、その他:General
         lang = 0;
@@ -62,6 +64,17 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View v) {
                 // 音声認識を開始
                 speech();
+            }
+        });
+
+        next.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(MainActivity.this, ImageActivity.class);
+                if(res1 != null) {
+                    intent.putExtra("word", res1);
+                    startActivity(intent);
+                }
             }
         });
     }
@@ -123,15 +136,6 @@ public class MainActivity extends AppCompatActivity {
     protected void onDestroy() {
 
         super.onDestroy();
-    }
-
-    private TestTask.Listener createListener() {
-        return new TestTask.Listener() {
-            @Override
-            public void onSuccess(int count) {
-                text1.setText(String.valueOf(count));
-            }
-        };
     }
 
     private void speech(){
