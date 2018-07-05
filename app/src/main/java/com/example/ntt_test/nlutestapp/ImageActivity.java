@@ -44,7 +44,7 @@ public class ImageActivity extends AppCompatActivity {
         Intent intent = getIntent();
         search = intent.getStringExtra("word");
 
-        TestTask test = new TestTask(imageView);
+        ImageSearchTask test = new ImageSearchTask(imageView);
         test.execute(search);
     }
 }

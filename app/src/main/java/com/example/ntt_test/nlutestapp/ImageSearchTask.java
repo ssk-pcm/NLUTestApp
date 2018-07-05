@@ -25,7 +25,7 @@ import java.util.Scanner;
 
 import javax.net.ssl.HttpsURLConnection;
 
-public class TestTask extends AsyncTask<String, Void, Bitmap> {
+public class ImageSearchTask extends AsyncTask<String, Void, Bitmap> {
 
     // Replace the subscriptionKey string value with your valid subscription key.
     static String subscriptionKey = "678a4900e849413380f04c00066662a5";
@@ -42,7 +42,7 @@ public class TestTask extends AsyncTask<String, Void, Bitmap> {
 
     static JsonObject resultObject;
 
-    public TestTask(ImageView imageView) {
+    public ImageSearchTask(ImageView imageView) {
         mImageView = imageView;
     }
 

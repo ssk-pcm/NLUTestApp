@@ -71,8 +71,10 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 Intent intent = new Intent(MainActivity.this, ImageActivity.class);
-                intent.putExtra("word",res1);
-                startActivity(intent);
+                if(res1 != null) {
+                    intent.putExtra("word", res1);
+                    startActivity(intent);
+                }
             }
         });
     }
