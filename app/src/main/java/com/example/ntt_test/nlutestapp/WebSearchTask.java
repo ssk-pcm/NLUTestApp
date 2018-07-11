@@ -1,18 +1,20 @@
 package com.example.ntt_test.nlutestapp;
 
+import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.AsyncTask;
-import android.os.Handler;
-import android.util.Log;
-import android.widget.ImageView;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-
-import org.json.JSONObject;
+import com.ibm.watson.developer_cloud.natural_language_understanding.v1.NaturalLanguageUnderstanding;
+import com.ibm.watson.developer_cloud.natural_language_understanding.v1.model.AnalysisResults;
+import com.ibm.watson.developer_cloud.natural_language_understanding.v1.model.AnalyzeOptions;
+import com.ibm.watson.developer_cloud.natural_language_understanding.v1.model.CategoriesOptions;
+import com.ibm.watson.developer_cloud.natural_language_understanding.v1.model.ConceptsOptions;
+import com.ibm.watson.developer_cloud.natural_language_understanding.v1.model.Features;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -25,7 +27,7 @@ import java.util.Scanner;
 
 import javax.net.ssl.HttpsURLConnection;
 
-public class ImageSearchTask extends AsyncTask<String, Void, Bitmap> {
+public class WebSearchTask extends AsyncTask<String, Void, String> {
 
     // Replace the subscriptionKey string value with your valid subscription key.
     static String subscriptionKey ;
@@ -35,15 +37,16 @@ public class ImageSearchTask extends AsyncTask<String, Void, Bitmap> {
     // encounter unexpected authorization errors, double-check this value against
     // the endpoint for your Bing Web search instance in your Azure dashboard.
     static String host = "https://api.cognitive.microsoft.com";
-    static String path = "/bing/v7.0/images/search";
-    private ImageView mImageView;
+    static String path = "/bing/v7.0/search";
+
     private Bitmap thumbnail;
 //    static String searchTerm = "タイヤ";
+    private AsyncTaskCallBack callBack;
 
     static JsonObject resultObject;
 
-    public ImageSearchTask(ImageView imageView) {
-        mImageView = imageView;
+    public WebSearchTask(AsyncTaskCallBack callBack) {
+        this.callBack = callBack;
     }
 
     @Override
@@ -54,36 +57,26 @@ public class ImageSearchTask extends AsyncTask<String, Void, Bitmap> {
 
     // 非同期処理
     @Override
-    protected Bitmap doInBackground(String... params) {
+    protected String doInBackground(String... params) {
         //画像検索
-        imageGet(params[0]);
+        objectGet(params[0]);
 
-        try {
-            System.out.println("result : " + resultObject.getAsJsonArray("value").get(0).getAsJsonObject().get("thumbnailUrl"));
-            //画像検索で出てきた1番目の画像のサムネイルを返す
-            String m = resultObject.getAsJsonArray("value").get(0).getAsJsonObject().get("thumbnailUrl").toString();
 
-            //画像のURLからBitmapを作成
-            String hoge =resultObject.getAsJsonArray("value").get(0).getAsJsonObject().get("thumbnailUrl").toString();
-            hoge = hoge.replaceAll("\"","");
-            URL url = new URL(hoge);
-            //インプットストリームで画像を読み込む
-            InputStream istream = url.openStream();
-            //読み込んだファイルをビットマップに変換
-            thumbnail = BitmapFactory.decodeStream(istream);
-            //インプットストリームを閉じる
-            istream.close();
-        } catch (IOException e) {
-            System.out.println("error");
-        }
-        return thumbnail;
+        System.out.println("WebSearchResult : " + resultObject.getAsJsonObject("webPages").getAsJsonArray("value").get(0).getAsJsonObject().get("snippet"));
+        //画像検索で出てきた1番目の画像のサムネイルを返す
+        //String m = resultObject.getAsJsonArray("value").get(0).getAsJsonObject().get("snippet").toString();
+
+        //画像のURLからBitmapを作成
+        String hoge = resultObject.getAsJsonObject("webPages").getAsJsonArray("value").get(0).getAsJsonObject().get("snippet").toString();
+        hoge = hoge.replaceAll("\"", "");
+
+        return hoge;
     }
 
     // 非同期処理が終了後、結果をメインスレッドに返す
     @Override
-    protected void onPostExecute(Bitmap result) {
-        final ImageView imageView = mImageView;
-        imageView.setImageBitmap(result);
+    protected void onPostExecute(String result) {
+        this.callBack.onTaskCompleted(result);
     }
 
     public static SearchResults SearchImages(String searchQuery) throws Exception {
@@ -121,7 +114,7 @@ public class ImageSearchTask extends AsyncTask<String, Void, Bitmap> {
     }
 
 
-    public static void imageGet(String searchTerm) {
+    public static void objectGet(String searchTerm) {
         if (subscriptionKey.length() != 32) {
             System.out.println("Invalid Bing Search API subscription key!");
             System.out.println("Please paste yours into the source code.");
@@ -130,6 +123,7 @@ public class ImageSearchTask extends AsyncTask<String, Void, Bitmap> {
 
 
         try {
+            /*
             System.out.println("Searching the Web for: " + searchTerm);
 
             SearchResults result = SearchImages(searchTerm);
@@ -139,6 +133,9 @@ public class ImageSearchTask extends AsyncTask<String, Void, Bitmap> {
                 System.out.println(header + ": " + result.relevantHeaders.get(header));
 
             System.out.println("\nJSON Response:\n");
+
+            */
+            SearchResults result = SearchImages(searchTerm);
             System.out.println(prettify(result.jsonResponse));
 
             JsonParser parser = new JsonParser();

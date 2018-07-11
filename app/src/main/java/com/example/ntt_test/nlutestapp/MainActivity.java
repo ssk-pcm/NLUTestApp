@@ -35,15 +35,16 @@ public class MainActivity extends AppCompatActivity {
     private String nlu_username;
     private String nlu_password;
     private String input;
-    private Context mContext;
     private String res1,res2,res3,res4 = "";
     private int lang ;
 
+    private static Context mContext;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        mContext = this;
 
         mContext = getApplicationContext();
         nlu_username = mContext.getString(R.string.nlu_username);
@@ -62,6 +63,11 @@ public class MainActivity extends AppCompatActivity {
         buttonStart.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                //ボタンを押すたびにresを空にする
+                res1=null;
+                res2=null;
+                res3=null;
+                res4=null;
                 // 音声認識を開始
                 speech();
             }
@@ -77,6 +83,7 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
+
     }
 
     protected void callNLU(String inputtext) {
@@ -86,13 +93,13 @@ public class MainActivity extends AppCompatActivity {
                 nlu_password
         );
 //        String text = "阪神の福留が同点ソロ本塁打を放ち試合を振り出しに戻した。";
-        String text = inputtext+" "+inputtext;
+        String text = inputtext;
         System.out.println(text);
 
         CategoriesOptions categories = new CategoriesOptions();
 
         ConceptsOptions concepts = new ConceptsOptions.Builder()
-                .limit(3)
+                .limit(4)
                 .build();
 
         Features features = new Features.Builder()
@@ -183,33 +190,42 @@ public class MainActivity extends AppCompatActivity {
                     data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
 
             if(candidates.size() > 0) {
-                // 認識結果候補で一番有力なものを表示
-//                textView.setText( candidates.get(0));
-                input = candidates.get(0);
+                input = candidates.get(0)+"wikipedia";
 
-                // メイン(UI)スレッドでHandlerのインスタンスを生成する
-                final Handler handler = new Handler();
+                WebSearchTask webSearchTask = new WebSearchTask(new AsyncTaskCallBack() {
+                    @Override
+                    public void onTaskCompleted(final String result) {
+                        // メイン(UI)スレッドでHandlerのインスタンスを生成する
+                        final Handler handler = new Handler();
 
-                //NLUサービスにメッセージを送信する
-                Thread thread = new Thread(new Runnable() {
-                    public void run() {
-                        // NLUサービスを呼び出す
-                        callNLU(input);
-
-                        // Handlerを使用してメイン(UI)スレッドに処理を依頼する
-                        handler.post(new Runnable() {
-                            @Override
+                        //NLUサービスにメッセージを送信する
+                        Thread thread = new Thread(new Runnable() {
                             public void run() {
-                                text1.setText("Result: " + res1);
-                                text2.setText("Result: " + res2);
-                                text3.setText("Result: " + res3);
-                                text4.setText("Result: " + res4);
+                                // NLUサービスを呼び出す
+                                callNLU(result);
+
+                                // Handlerを使用してメイン(UI)スレッドに処理を依頼する
+                                handler.post(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        text1.setText("Result: " + res1);
+                                        text2.setText("Result: " + res2);
+                                        text3.setText("Result: " + res3);
+                                        text4.setText("Result: " + res4);
+                                    }
+                                });
                             }
                         });
+                        thread.start();
                     }
                 });
-                thread.start();
+                webSearchTask.execute(input);
+
             }
         }
+    }
+
+    public static Context getContext(){
+        return mContext;
     }
 }
