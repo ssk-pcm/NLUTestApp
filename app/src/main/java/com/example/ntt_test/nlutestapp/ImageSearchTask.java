@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,7 +29,7 @@ import javax.net.ssl.HttpsURLConnection;
 public class ImageSearchTask extends AsyncTask<String, Void, Bitmap> {
 
     // Replace the subscriptionKey string value with your valid subscription key.
-    static String subscriptionKey ;
+    static String subscriptionKey;
 
     // Verify the endpoint URI.  At this writing, only one endpoint is used for Bing
     // search APIs.  In the future, regional endpoints may be available.  If you
@@ -38,18 +39,22 @@ public class ImageSearchTask extends AsyncTask<String, Void, Bitmap> {
     static String path = "/bing/v7.0/images/search";
     private ImageView mImageView;
     private Bitmap thumbnail;
-//    static String searchTerm = "タイヤ";
+    private ArrayList<String> imageUrl;
+    //    static String searchTerm = "タイヤ";
+    private WebSearchTaskCallBack callBack;
 
     static JsonObject resultObject;
 
-    public ImageSearchTask(ImageView imageView) {
+    public ImageSearchTask(ImageView imageView,WebSearchTaskCallBack callBack) {
         mImageView = imageView;
+        this.callBack = callBack;
     }
 
     @Override
     protected void onPreExecute() {
         super.onPreExecute();
         subscriptionKey = MainActivity.getContext().getResources().getString(R.string.azure_api_key1);
+        imageUrl = new ArrayList<String>();
     }
 
     // 非同期処理
@@ -64,8 +69,8 @@ public class ImageSearchTask extends AsyncTask<String, Void, Bitmap> {
             String m = resultObject.getAsJsonArray("value").get(0).getAsJsonObject().get("thumbnailUrl").toString();
 
             //画像のURLからBitmapを作成
-            String hoge =resultObject.getAsJsonArray("value").get(0).getAsJsonObject().get("thumbnailUrl").toString();
-            hoge = hoge.replaceAll("\"","");
+            String hoge = resultObject.getAsJsonArray("value").get(0).getAsJsonObject().get("thumbnailUrl").toString();
+            hoge = hoge.replaceAll("\"", "");
             URL url = new URL(hoge);
             //インプットストリームで画像を読み込む
             InputStream istream = url.openStream();
@@ -73,9 +78,22 @@ public class ImageSearchTask extends AsyncTask<String, Void, Bitmap> {
             thumbnail = BitmapFactory.decodeStream(istream);
             //インプットストリームを閉じる
             istream.close();
+
+            int adda=resultObject.getAsJsonArray("value").size();
+
+            for(int i = 0;i < resultObject.getAsJsonArray("value").size();i++){
+                try{
+                    String addUrl =resultObject.getAsJsonArray("value").get(i).getAsJsonObject().get("thumbnailUrl").toString();
+                    addUrl = addUrl.replaceAll("\"", "");
+                    imageUrl.add(addUrl);
+                }catch(NullPointerException e){
+                    System.out.println("");
+                }
+            }
         } catch (IOException e) {
             System.out.println("error");
         }
+
         return thumbnail;
     }
 
@@ -84,6 +102,8 @@ public class ImageSearchTask extends AsyncTask<String, Void, Bitmap> {
     protected void onPostExecute(Bitmap result) {
         final ImageView imageView = mImageView;
         imageView.setImageBitmap(result);
+
+        this.callBack.onImageSearchCompleted(imageUrl);
     }
 
     public static SearchResults SearchImages(String searchQuery) throws Exception {

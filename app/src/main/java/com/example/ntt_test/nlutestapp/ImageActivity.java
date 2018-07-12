@@ -5,6 +5,8 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.widget.ImageView;
 
+import java.util.ArrayList;
+
 public class ImageActivity extends AppCompatActivity {
 
     // Replace the subscriptionKey string value with your valid subscription key.
@@ -28,7 +30,18 @@ public class ImageActivity extends AppCompatActivity {
         Intent intent = getIntent();
         search = intent.getStringExtra("word");
 
-        ImageSearchTask test = new ImageSearchTask(imageView);
+        ImageSearchTask test = new ImageSearchTask(imageView, new WebSearchTaskCallBack() {
+            @Override
+            public void onWebSearchCompleted(String result) {
+            }
+
+            @Override
+            public void onImageSearchCompleted(ArrayList<String> result) {
+                for(int i = 0;i < result.size();i++){
+                    System.out.println(result.get(i));
+                }
+            }
+        });
         test.execute(search);
     }
 }

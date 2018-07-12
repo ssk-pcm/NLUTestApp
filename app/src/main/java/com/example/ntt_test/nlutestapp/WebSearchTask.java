@@ -1,22 +1,13 @@
 package com.example.ntt_test.nlutestapp;
 
-import android.content.Context;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.os.AsyncTask;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.ibm.watson.developer_cloud.natural_language_understanding.v1.NaturalLanguageUnderstanding;
-import com.ibm.watson.developer_cloud.natural_language_understanding.v1.model.AnalysisResults;
-import com.ibm.watson.developer_cloud.natural_language_understanding.v1.model.AnalyzeOptions;
-import com.ibm.watson.developer_cloud.natural_language_understanding.v1.model.CategoriesOptions;
-import com.ibm.watson.developer_cloud.natural_language_understanding.v1.model.ConceptsOptions;
-import com.ibm.watson.developer_cloud.natural_language_understanding.v1.model.Features;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.net.URLEncoder;
@@ -30,7 +21,7 @@ import javax.net.ssl.HttpsURLConnection;
 public class WebSearchTask extends AsyncTask<String, Void, String> {
 
     // Replace the subscriptionKey string value with your valid subscription key.
-    static String subscriptionKey ;
+    static String subscriptionKey;
 
     // Verify the endpoint URI.  At this writing, only one endpoint is used for Bing
     // search APIs.  In the future, regional endpoints may be available.  If you
@@ -40,12 +31,12 @@ public class WebSearchTask extends AsyncTask<String, Void, String> {
     static String path = "/bing/v7.0/search";
 
     private Bitmap thumbnail;
-//    static String searchTerm = "タイヤ";
-    private AsyncTaskCallBack callBack;
+    //    static String searchTerm = "タイヤ";
+    private WebSearchTaskCallBack callBack;
 
     static JsonObject resultObject;
 
-    public WebSearchTask(AsyncTaskCallBack callBack) {
+    public WebSearchTask(WebSearchTaskCallBack callBack) {
         this.callBack = callBack;
     }
 
@@ -61,7 +52,6 @@ public class WebSearchTask extends AsyncTask<String, Void, String> {
         //画像検索
         objectGet(params[0]);
 
-
         System.out.println("WebSearchResult : " + resultObject.getAsJsonObject("webPages").getAsJsonArray("value").get(0).getAsJsonObject().get("snippet"));
         //画像検索で出てきた1番目の画像のサムネイルを返す
         //String m = resultObject.getAsJsonArray("value").get(0).getAsJsonObject().get("snippet").toString();
@@ -76,7 +66,7 @@ public class WebSearchTask extends AsyncTask<String, Void, String> {
     // 非同期処理が終了後、結果をメインスレッドに返す
     @Override
     protected void onPostExecute(String result) {
-        this.callBack.onTaskCompleted(result);
+        this.callBack.onWebSearchCompleted(result);
     }
 
     public static SearchResults SearchImages(String searchQuery) throws Exception {
@@ -136,7 +126,8 @@ public class WebSearchTask extends AsyncTask<String, Void, String> {
 
             */
             SearchResults result = SearchImages(searchTerm);
-            System.out.println(prettify(result.jsonResponse));
+            // 結果をコンソールで表示
+//            System.out.println(prettify(result.jsonResponse));
 
             JsonParser parser = new JsonParser();
             resultObject = parser.parse(result.jsonResponse).getAsJsonObject();

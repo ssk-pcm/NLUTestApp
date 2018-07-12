@@ -9,10 +9,8 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
-import android.widget.ImageView;
 import android.widget.TextView;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.ibm.watson.developer_cloud.natural_language_understanding.v1.NaturalLanguageUnderstanding;
@@ -190,11 +188,11 @@ public class MainActivity extends AppCompatActivity {
                     data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
 
             if(candidates.size() > 0) {
-                input = candidates.get(0)+"wikipedia";
+                input = candidates.get(0);
 
-                WebSearchTask webSearchTask = new WebSearchTask(new AsyncTaskCallBack() {
+                WebSearchTask webSearchTask = new WebSearchTask(new WebSearchTaskCallBack() {
                     @Override
-                    public void onTaskCompleted(final String result) {
+                    public void onWebSearchCompleted(final String result) {
                         // メイン(UI)スレッドでHandlerのインスタンスを生成する
                         final Handler handler = new Handler();
 
@@ -217,6 +215,11 @@ public class MainActivity extends AppCompatActivity {
                             }
                         });
                         thread.start();
+                    }
+
+                    @Override
+                    public void onImageSearchCompleted(ArrayList<String> e) {
+
                     }
                 });
                 webSearchTask.execute(input);
