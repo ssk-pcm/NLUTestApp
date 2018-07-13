@@ -1,9 +1,16 @@
 package com.example.ntt_test.nlutestapp;
 
 import android.content.Intent;
+import android.os.Parcelable;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.view.View;
+import android.widget.Button;
+import android.widget.GridView;
 import android.widget.ImageView;
+import android.widget.TextView;
+
+import java.util.ArrayList;
 
 public class ImageActivity extends AppCompatActivity {
 
@@ -18,17 +25,79 @@ public class ImageActivity extends AppCompatActivity {
     static String path = "/bing/v7.0/images/search";
     static String searchTerm = "puppies";
     private String search;
+    private GridView mGridView;
+    private Button nextbtn;
+    private TextView wordtext;
+    private int count = 0;
+    private ArrayList<String> list = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_image);
-        ImageView imageView = (ImageView) findViewById(R.id.imageView);
+        mGridView = (GridView) findViewById(R.id.gridView);
+        nextbtn = (Button) findViewById(R.id.nextbtn);
+        wordtext = (TextView) findViewById(R.id.wordtext);
 
         Intent intent = getIntent();
+
+        list.addAll(intent.getStringArrayListExtra("listword"));
         search = intent.getStringExtra("word");
 
-        ImageSearchTask test = new ImageSearchTask(imageView);
-        test.execute(search);
+        ImageSearchTask test = new ImageSearchTask(new WebSearchTaskCallBack() {
+            @Override
+            public void onWebSearchCompleted(String result) {
+            }
+
+            @Override
+            public void onImageSearchCompleted(ArrayList<String> result) {
+                wordtext.setText(list.get(count));
+                for (int i = 0; i < result.size(); i++) {
+                    System.out.println(result.get(i));
+                    BitmapAdapter adapter = new BitmapAdapter(
+                            getApplicationContext(),
+                            result
+                    );
+                    mGridView.setAdapter(adapter);
+                }
+                count++;
+            }
+        });
+        test.execute(list.get(count));
+
+        nextbtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (list.size() > count) {
+                    ImageSearchTask test = new ImageSearchTask(new WebSearchTaskCallBack() {
+                        @Override
+                        public void onWebSearchCompleted(String result) {
+                        }
+
+                        @Override
+                        public void onImageSearchCompleted(ArrayList<String> result) {
+                            wordtext.setText(list.get(count));
+                            for (int i = 0; i < result.size(); i++) {
+                                System.out.println(result.get(i));
+                                BitmapAdapter adapter = new BitmapAdapter(
+                                        getApplicationContext(),
+                                        result
+                                );
+                                mGridView.setAdapter(adapter);
+
+                            }
+                            count++;
+                        }
+                    });
+                    test.execute(list.get(count));
+                }
+            }
+        });
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
     }
 }
