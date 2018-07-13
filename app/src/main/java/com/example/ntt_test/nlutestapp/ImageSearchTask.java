@@ -37,7 +37,6 @@ public class ImageSearchTask extends AsyncTask<String, Void, Bitmap> {
     // the endpoint for your Bing Web search instance in your Azure dashboard.
     static String host = "https://api.cognitive.microsoft.com";
     static String path = "/bing/v7.0/images/search";
-    private ImageView mImageView;
     private Bitmap thumbnail;
     private ArrayList<String> imageUrl;
     //    static String searchTerm = "タイヤ";
@@ -45,8 +44,8 @@ public class ImageSearchTask extends AsyncTask<String, Void, Bitmap> {
 
     static JsonObject resultObject;
 
-    public ImageSearchTask(ImageView imageView,WebSearchTaskCallBack callBack) {
-        mImageView = imageView;
+    public ImageSearchTask(WebSearchTaskCallBack callBack) {
+     //   mImageView = imageView;
         this.callBack = callBack;
     }
 
@@ -93,6 +92,9 @@ public class ImageSearchTask extends AsyncTask<String, Void, Bitmap> {
         } catch (IOException e) {
             System.out.println("error");
         }
+        catch (RuntimeException e){
+            System.out.println("error");
+        }
 
         return thumbnail;
     }
@@ -100,8 +102,8 @@ public class ImageSearchTask extends AsyncTask<String, Void, Bitmap> {
     // 非同期処理が終了後、結果をメインスレッドに返す
     @Override
     protected void onPostExecute(Bitmap result) {
-        final ImageView imageView = mImageView;
-        imageView.setImageBitmap(result);
+//        final ImageView imageView = mImageView;
+//        imageView.setImageBitmap(result);
 
         this.callBack.onImageSearchCompleted(imageUrl);
     }

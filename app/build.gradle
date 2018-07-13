@@ -30,4 +30,6 @@ dependencies {
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.3.4'
     // API叩く用
     implementation 'com.squareup.okhttp3:okhttp:3.10.0'
+    //画像表示用
+    implementation 'com.squareup.picasso:picasso:2.5.2'
 }

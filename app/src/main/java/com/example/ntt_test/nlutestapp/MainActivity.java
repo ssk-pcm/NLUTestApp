@@ -76,7 +76,13 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View v) {
                 Intent intent = new Intent(MainActivity.this, ImageActivity.class);
                 if(res1 != null) {
+                    ArrayList<String> listWord = new ArrayList<>();
                     intent.putExtra("word", res1);
+                    listWord.add(res1);
+                    if(res2 != null)listWord.add(res2);
+                    if(res3 != null)listWord.add(res3);
+                    if(res4 != null)listWord.add(res4);
+                    intent.putStringArrayListExtra("listword",listWord);
                     startActivity(intent);
                 }
             }
