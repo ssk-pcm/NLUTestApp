@@ -49,15 +49,15 @@ public class WebSearchTask extends AsyncTask<String, Void, String> {
     // 非同期処理
     @Override
     protected String doInBackground(String... params) {
-        //画像検索
+        //Web検索
         objectGet(params[0]);
 
-        System.out.println("WebSearchResult : " + resultObject.getAsJsonObject("webPages").getAsJsonArray("value").get(0).getAsJsonObject().get("snippet"));
+        System.out.println("WebSearchResult : " + resultObject.getAsJsonObject("webPages").getAsJsonArray("value").get(0).getAsJsonObject().get("url"));
         //画像検索で出てきた1番目の画像のサムネイルを返す
         //String m = resultObject.getAsJsonArray("value").get(0).getAsJsonObject().get("snippet").toString();
 
         //画像のURLからBitmapを作成
-        String hoge = resultObject.getAsJsonObject("webPages").getAsJsonArray("value").get(0).getAsJsonObject().get("snippet").toString();
+        String hoge = resultObject.getAsJsonObject("webPages").getAsJsonArray("value").get(0).getAsJsonObject().get("url").toString();
         hoge = hoge.replaceAll("\"", "");
 
         return hoge;
@@ -69,7 +69,7 @@ public class WebSearchTask extends AsyncTask<String, Void, String> {
         this.callBack.onWebSearchCompleted(result);
     }
 
-    public static SearchResults SearchImages(String searchQuery) throws Exception {
+    public static SearchResults SearchItems(String searchQuery) throws Exception {
         // construct URL of search request (endpoint + query string)
         URL url = new URL(host + path + "?q=" + URLEncoder.encode(searchQuery, "UTF-8"));
         HttpsURLConnection connection = (HttpsURLConnection) url.openConnection();
@@ -125,9 +125,9 @@ public class WebSearchTask extends AsyncTask<String, Void, String> {
             System.out.println("\nJSON Response:\n");
 
             */
-            SearchResults result = SearchImages(searchTerm);
+            SearchResults result = SearchItems(searchTerm);
             // 結果をコンソールで表示
-//            System.out.println(prettify(result.jsonResponse));
+            System.out.println(prettify(result.jsonResponse));
 
             JsonParser parser = new JsonParser();
             resultObject = parser.parse(result.jsonResponse).getAsJsonObject();
