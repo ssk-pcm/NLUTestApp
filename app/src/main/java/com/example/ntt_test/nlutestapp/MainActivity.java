@@ -7,17 +7,10 @@ import android.os.Handler;
 import android.speech.RecognizerIntent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
-import android.widget.CompoundButton;
-import android.widget.Switch;
 import android.widget.TextView;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.ibm.watson.developer_cloud.natural_language_understanding.v1.NaturalLanguageUnderstanding;
@@ -30,7 +23,7 @@ import com.ibm.watson.developer_cloud.natural_language_understanding.v1.model.Fe
 import java.util.ArrayList;
 import java.util.Locale;
 
-public class MainActivity extends AppCompatActivity implements CompoundButton.OnCheckedChangeListener {
+public class MainActivity extends AppCompatActivity {
 
     private static final String SERVICE_NAME = "natural_language_understanding";
     private static final String URL = "https://gateway.watsonplatform.net/natural-language-understanding/api";
@@ -40,9 +33,8 @@ public class MainActivity extends AppCompatActivity implements CompoundButton.On
     private String nlu_username;
     private String nlu_password;
     private String input;
-    private String res1, res2, res3, res4 = null;
-    private int lang;
-    private Boolean en = false;
+    private String res1,res2,res3,res4 = "";
+    private int lang ;
 
     private static Context mContext;
 
@@ -62,13 +54,6 @@ public class MainActivity extends AppCompatActivity implements CompoundButton.On
         text4 = findViewById(R.id.result4);
         Button buttonStart = findViewById(R.id.button_start);
         Button next = findViewById(R.id.button);
-        Button wsbtn1 = findViewById(R.id.wsbtn1);
-        Button wsbtn2 = findViewById(R.id.wsbtn2);
-        Button wsbtn3 = findViewById(R.id.wsbtn3);
-        Button wsbtn4 = findViewById(R.id.wsbtn4);
-        Switch enSwich = findViewById(R.id.enswich);
-
-        enSwich.setOnCheckedChangeListener(this);
 
         // 言語選択 0:日本語、1:英語、2:オフライン、その他:General
         lang = 0;
@@ -77,10 +62,10 @@ public class MainActivity extends AppCompatActivity implements CompoundButton.On
             @Override
             public void onClick(View v) {
                 //ボタンを押すたびにresを空にする
-                res1 = null;
-                res2 = null;
-                res3 = null;
-                res4 = null;
+                res1=null;
+                res2=null;
+                res3=null;
+                res4=null;
                 // 音声認識を開始
                 speech();
             }
@@ -90,77 +75,15 @@ public class MainActivity extends AppCompatActivity implements CompoundButton.On
             @Override
             public void onClick(View v) {
                 Intent intent = new Intent(MainActivity.this, ImageActivity.class);
-                if (res1 != null) {
+                if(res1 != null) {
                     ArrayList<String> listWord = new ArrayList<>();
                     intent.putExtra("word", res1);
                     listWord.add(res1);
-                    if (res2 != null) listWord.add(res2);
-                    if (res3 != null) listWord.add(res3);
-                    if (res4 != null) listWord.add(res4);
-                    intent.putStringArrayListExtra("listword", listWord);
+                    if(res2 != null)listWord.add(res2);
+                    if(res3 != null)listWord.add(res3);
+                    if(res4 != null)listWord.add(res4);
+                    intent.putStringArrayListExtra("listword",listWord);
                     startActivity(intent);
-                }
-            }
-        });
-
-        wsbtn1.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (res1 != null) {
-
-                    //ボタンを押すたびにresを空にする
-                    res2 = null;
-                    res3 = null;
-                    res4 = null;
-
-                    // 検索
-                    webSearch(res1);
-                }
-
-            }
-        });
-        wsbtn2.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (res2 != null) {
-
-                    //ボタンを押すたびにresを空にする
-                    res1 = null;
-                    res3 = null;
-                    res4 = null;
-
-                    // 検索
-                    webSearch(res2);
-                }
-            }
-        });
-        wsbtn3.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (res3 != null) {
-
-                    //ボタンを押すたびにresを空にする
-                    res2 = null;
-                    res1 = null;
-                    res4 = null;
-
-                    // 検索
-                    webSearch(res3);
-                }
-            }
-        });
-        wsbtn4.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (res4 != null) {
-
-                    //ボタンを押すたびにresを空にする
-                    res2 = null;
-                    res3 = null;
-                    res1 = null;
-
-                    // 検索
-                    webSearch(res4);
                 }
             }
         });
@@ -189,7 +112,7 @@ public class MainActivity extends AppCompatActivity implements CompoundButton.On
                 .build();
 
         AnalyzeOptions parameters = new AnalyzeOptions.Builder()
-                .url(text)
+                .text(text)
                 .features(features)
                 .build();
 
@@ -226,20 +149,23 @@ public class MainActivity extends AppCompatActivity implements CompoundButton.On
         super.onDestroy();
     }
 
-    private void speech() {
+    private void speech(){
         // 音声認識の　Intent インスタンス
         Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
 
-        if (lang == 0) {
+        if(lang == 0){
             // 日本語
-            intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.JAPAN.toString());
-        } else if (lang == 1) {
+            intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE,Locale.JAPAN.toString() );
+        }
+        else if(lang == 1){
             // 英語
-            intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.ENGLISH.toString());
-        } else if (lang == 2) {
+            intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.ENGLISH.toString() );
+        }
+        else if(lang == 2){
             // Off line mode
             intent.putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true);
-        } else {
+        }
+        else{
             intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,
                     RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
         }
@@ -250,7 +176,8 @@ public class MainActivity extends AppCompatActivity implements CompoundButton.On
         try {
             // インテント発行
             startActivityForResult(intent, REQUEST_CODE);
-        } catch (ActivityNotFoundException e) {
+        }
+        catch (ActivityNotFoundException e) {
             e.printStackTrace();
             text1.setText("error");
         }
@@ -258,107 +185,56 @@ public class MainActivity extends AppCompatActivity implements CompoundButton.On
 
     // 結果を受け取るために onActivityResult を設置
     @Override
-    protected void onActivityResult(final int requestCode, int resultCode, Intent data) {
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
-        if (requestCode == REQUEST_CODE && resultCode == RESULT_OK) {
+        if(requestCode == REQUEST_CODE && resultCode == RESULT_OK) {
             // 認識結果を ArrayList で取得
             ArrayList<String> candidates =
                     data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
 
-            if (candidates.size() > 0) {
+            if(candidates.size() > 0) {
                 input = candidates.get(0);
 
+                WebSearchTask webSearchTask = new WebSearchTask(new WebSearchTaskCallBack() {
+                    @Override
+                    public void onWebSearchCompleted(final String result) {
+                        // メイン(UI)スレッドでHandlerのインスタンスを生成する
+                        final Handler handler = new Handler();
 
-                if(en){// 英語に翻訳して検索する
-                    //英語に翻訳する
-                    TranslateTask translate = new TranslateTask();
-                    translate.setOnCallBack(new TranslateTask.CallBackTask() {
-
-                        @Override
-                        public void CallBack(String result) {
-                            super.CallBack(result);
-
-                            // 検索
-                            webSearch(result);
-                        }
-                    });
-
-                    //翻訳を実行
-                    translate.execute(input);
-                }else{// 日本語のまま検索する
-                    // 検索
-                    webSearch(input);
-                }
-            }
-        }
-    }
-
-    private void webSearch(String word) {
-        WebSearchTask webSearchTask = new WebSearchTask(new WebSearchTaskCallBack() {
-            @Override
-            public void onWebSearchCompleted(final String result) {
-                // メイン(UI)スレッドでHandlerのインスタンスを生成する
-                final Handler handler = new Handler();
-
-                //NLUサービスにメッセージを送信する
-                Thread thread = new Thread(new Runnable() {
-                    public void run() {
-                        // NLUサービスを呼び出す
-                        callNLU(result);
-
-                        // Handlerを使用してメイン(UI)スレッドに処理を依頼する
-                        handler.post(new Runnable() {
-                            @Override
+                        //NLUサービスにメッセージを送信する
+                        Thread thread = new Thread(new Runnable() {
                             public void run() {
-                                text1.setText("Result: " + res1);
-                                text2.setText("Result: " + res2);
-                                text3.setText("Result: " + res3);
-                                text4.setText("Result: " + res4);
-                                System.out.println(res1 + "\n" + res2 + "\n" + res3 + "\n" + res4);
+                                // NLUサービスを呼び出す
+                                callNLU(result);
+
+                                // Handlerを使用してメイン(UI)スレッドに処理を依頼する
+                                handler.post(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        text1.setText("Result: " + res1);
+                                        text2.setText("Result: " + res2);
+                                        text3.setText("Result: " + res3);
+                                        text4.setText("Result: " + res4);
+                                    }
+                                });
                             }
                         });
-                        // 画像検索開始
-                        //nextIntent();
+                        thread.start();
+                    }
+
+                    @Override
+                    public void onImageSearchCompleted(ArrayList<String> e) {
+
                     }
                 });
-                thread.start();
-            }
-
-            @Override
-            public void onImageSearchCompleted(ArrayList<String> e) {
+                webSearchTask.execute(input);
 
             }
-        });
-        webSearchTask.execute(word);
-    }
-
-    private void nextIntent() {
-        Intent intent = new Intent(MainActivity.this, ImageActivity.class);
-        if (res1 != null) {
-            ArrayList<String> listWord = new ArrayList<>();
-            intent.putExtra("word", res1);
-            listWord.add(res1);
-            if (res2 != null) listWord.add(res2);
-            if (res3 != null) listWord.add(res3);
-            if (res4 != null) listWord.add(res4);
-            intent.putStringArrayListExtra("listword", listWord);
-            startActivity(intent);
         }
     }
 
-    public static Context getContext() {
+    public static Context getContext(){
         return mContext;
-    }
-
-    @Override
-    public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
-        if(b) {
-            //do stuff when Switch is ON
-            en = true;
-        } else {
-            //do stuff when Switch if OFF
-            en = false;
-        }
     }
 }
