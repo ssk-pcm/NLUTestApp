@@ -161,7 +161,7 @@ public class ImageSearchTask extends AsyncTask<String, Void, Bitmap> {
                 System.out.println(header + ": " + result.relevantHeaders.get(header));
 
             System.out.println("\nJSON Response:\n");
-           // System.out.println(prettify(result.jsonResponse));
+            System.out.println(prettify(result.jsonResponse));
 
             JsonParser parser = new JsonParser();
             resultObject = parser.parse(result.jsonResponse).getAsJsonObject();
