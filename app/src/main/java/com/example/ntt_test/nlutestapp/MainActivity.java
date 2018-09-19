@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Handler;
 import android.speech.RecognizerIntent;
+import android.speech.SpeechRecognizer;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -106,15 +107,26 @@ public class MainActivity extends AppCompatActivity implements CompoundButton.On
         wsbtn1.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (res1 != null) {
+                input="太陽光";
+                if(en){// 英語に翻訳して検索する
+                    //英語に翻訳する
+                    TranslateTask translate = new TranslateTask();
+                    translate.setOnCallBack(new TranslateTask.CallBackTask() {
 
-                    //ボタンを押すたびにresを空にする
-                    res2 = null;
-                    res3 = null;
-                    res4 = null;
+                        @Override
+                        public void CallBack(String result) {
+                            super.CallBack(result);
 
+                            // 検索
+                            webSearch(result);
+                        }
+                    });
+
+                    //翻訳を実行
+                    translate.execute(input);
+                }else{// 日本語のまま検索する
                     // 検索
-                    webSearch(res1);
+                    webSearch(input);
                 }
 
             }
@@ -122,45 +134,78 @@ public class MainActivity extends AppCompatActivity implements CompoundButton.On
         wsbtn2.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (res2 != null) {
+                input=res1 + " " + res2;
+                if(en){// 英語に翻訳して検索する
+                    //英語に翻訳する
+                    TranslateTask translate = new TranslateTask();
+                    translate.setOnCallBack(new TranslateTask.CallBackTask() {
 
-                    //ボタンを押すたびにresを空にする
-                    res1 = null;
-                    res3 = null;
-                    res4 = null;
+                        @Override
+                        public void CallBack(String result) {
+                            super.CallBack(result);
 
+                            // 検索
+                            webSearch(result);
+                        }
+                    });
+
+                    //翻訳を実行
+                    translate.execute(input);
+                }else{// 日本語のまま検索する
                     // 検索
-                    webSearch(res2);
+                    webSearch(input);
                 }
             }
         });
         wsbtn3.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (res3 != null) {
+                input=res1 + " " + res3;
+                if(en){// 英語に翻訳して検索する
+                    //英語に翻訳する
+                    TranslateTask translate = new TranslateTask();
+                    translate.setOnCallBack(new TranslateTask.CallBackTask() {
 
-                    //ボタンを押すたびにresを空にする
-                    res2 = null;
-                    res1 = null;
-                    res4 = null;
+                        @Override
+                        public void CallBack(String result) {
+                            super.CallBack(result);
 
+                            // 検索
+                            webSearch(result);
+                        }
+                    });
+
+                    //翻訳を実行
+                    translate.execute(input);
+                }else{// 日本語のまま検索する
                     // 検索
-                    webSearch(res3);
+                    webSearch(input);
                 }
             }
         });
         wsbtn4.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (res4 != null) {
+                input=res2 + " " + res3;
+                if(en){// 英語に翻訳して検索する
+                    //英語に翻訳する
+                    TranslateTask translate = new TranslateTask();
+                    translate.setOnCallBack(new TranslateTask.CallBackTask() {
 
-                    //ボタンを押すたびにresを空にする
-                    res2 = null;
-                    res3 = null;
-                    res1 = null;
+                        @Override
+                        public void CallBack(String result) {
+                            super.CallBack(result);
 
+                            // 検索
+                            webSearch(result);
+                        }
+                    });
+
+                    //翻訳を実行
+                    translate.execute(input);
+                }else{// 日本語のまま検索する
                     // 検索
-                    webSearch(res4);
+                    webSearch(input);
                 }
             }
         });
@@ -246,6 +291,8 @@ public class MainActivity extends AppCompatActivity implements CompoundButton.On
 
         intent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 100);
         intent.putExtra(RecognizerIntent.EXTRA_PROMPT, "音声を入力");
+        intent.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true);
+        SpeechRecognizer recognizer = SpeechRecognizer.createSpeechRecognizer(this);
 
         try {
             // インテント発行
@@ -256,7 +303,7 @@ public class MainActivity extends AppCompatActivity implements CompoundButton.On
         }
     }
 
-    // 結果を受け取るために onActivityResult を設置
+    // 音声認識の結果受け取り
     @Override
     protected void onActivityResult(final int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
@@ -330,7 +377,7 @@ public class MainActivity extends AppCompatActivity implements CompoundButton.On
 
             }
         });
-        webSearchTask.execute(word);
+        webSearchTask.execute("filetype:html "+word);
     }
 
     private void nextIntent() {
