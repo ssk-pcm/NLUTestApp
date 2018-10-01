@@ -210,6 +210,15 @@ public class MainActivity extends AppCompatActivity implements CompoundButton.On
             }
         });
 
+        Button sss = (Button)findViewById(R.id.suggest);
+        sss.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                AutosuggestTask suggest = new AutosuggestTask();
+                suggest.execute();
+            }
+        });
+
     }
 
     protected void callNLU(String inputtext) {
