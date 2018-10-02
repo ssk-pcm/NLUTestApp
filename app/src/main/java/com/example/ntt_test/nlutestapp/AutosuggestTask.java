@@ -2,7 +2,6 @@ package com.example.ntt_test.nlutestapp;
 
 import java.io.*;
 import java.net.*;
-import java.util.*;
 
 import javax.net.ssl.HttpsURLConnection;
 
@@ -24,6 +23,7 @@ import android.os.AsyncTask;
  */
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
@@ -35,24 +35,48 @@ public class AutosuggestTask extends AsyncTask<String, Void, String> {
     static String path = "/bing/v7.0/Suggestions";
 
     static String mkt = "ja-JP";
-    static String query = "鍵盤 ゆ";
+    static String query = " ";
 
+    private AutosuggestCallBackTask callbacktask;
 
     @Override
-    protected String doInBackground(String... strings) {
+    protected String doInBackground(String... params) {
+        String suggestWord = null;
+        query = params[0];
         try {
             String response = get_suggestions();
             System.out.println(prettify(response));
+
+            JsonParser parser = new JsonParser();
+            JsonObject jo = parser.parse(response).getAsJsonObject();
+
+            JsonObject suggestionGroups = jo.getAsJsonArray("suggestionGroups").get(0).getAsJsonObject();
+            JsonArray searchSuggestions = suggestionGroups.getAsJsonArray("searchSuggestions");
+            JsonObject query = searchSuggestions.get(0).getAsJsonObject();
+            suggestWord = query.get("query").toString();
         } catch (Exception e) {
             System.out.println(e);
         }
 
-        return null;
+        return suggestWord;
     }
 
     @Override
     protected void onPostExecute(String result) {
         super.onPostExecute(result);
+        callbacktask.AutosuggestCallBack(result);
+    }
+
+    public void setOnAutosuggestCallBack(AutosuggestCallBackTask _cbj) {
+        callbacktask = _cbj;
+    }
+
+    /**
+     * コールバック用のstaticなclass
+     */
+    public static class AutosuggestCallBackTask {
+        public void AutosuggestCallBack(String result) {
+        }
     }
 
     public static String get_suggestions() throws Exception {

@@ -33,7 +33,7 @@ public class TranslateTask extends AsyncTask<String,Void,String> {
     static String params = "&to=en";
 
     //static String text = "Hello world!";
-    private CallBackTask callbacktask;
+    private TranslateCallBackTask callbacktask;
 
     @Override
     protected String doInBackground(String... params) {
@@ -61,11 +61,11 @@ public class TranslateTask extends AsyncTask<String,Void,String> {
     @Override
     protected void onPostExecute(String result) {
         super.onPostExecute(result);
-        callbacktask.CallBack(result);
+        callbacktask.TranslateCallBack(result);
     }
 
 
-    public void setOnCallBack(CallBackTask _cbj) {
+    public void setOnTranslateCallBack(TranslateCallBackTask _cbj) {
         callbacktask = _cbj;
     }
 
@@ -73,8 +73,8 @@ public class TranslateTask extends AsyncTask<String,Void,String> {
     /**
      * コールバック用のstaticなclass
      */
-    public static class CallBackTask {
-        public void CallBack(String result) {
+    public static class TranslateCallBackTask {
+        public void TranslateCallBack(String result) {
         }
     }
 

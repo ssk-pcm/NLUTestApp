@@ -8,17 +8,12 @@ import android.speech.RecognizerIntent;
 import android.speech.SpeechRecognizer;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.Switch;
 import android.widget.TextView;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.ibm.watson.developer_cloud.natural_language_understanding.v1.NaturalLanguageUnderstanding;
@@ -111,11 +106,11 @@ public class MainActivity extends AppCompatActivity implements CompoundButton.On
                 if(en){// 英語に翻訳して検索する
                     //英語に翻訳する
                     TranslateTask translate = new TranslateTask();
-                    translate.setOnCallBack(new TranslateTask.CallBackTask() {
+                    translate.setOnTranslateCallBack(new TranslateTask.TranslateCallBackTask() {
 
                         @Override
-                        public void CallBack(String result) {
-                            super.CallBack(result);
+                        public void TranslateCallBack(String result) {
+                            super.TranslateCallBack(result);
 
                             // 検索
                             webSearch(result);
@@ -138,11 +133,11 @@ public class MainActivity extends AppCompatActivity implements CompoundButton.On
                 if(en){// 英語に翻訳して検索する
                     //英語に翻訳する
                     TranslateTask translate = new TranslateTask();
-                    translate.setOnCallBack(new TranslateTask.CallBackTask() {
+                    translate.setOnTranslateCallBack(new TranslateTask.TranslateCallBackTask() {
 
                         @Override
-                        public void CallBack(String result) {
-                            super.CallBack(result);
+                        public void TranslateCallBack(String result) {
+                            super.TranslateCallBack(result);
 
                             // 検索
                             webSearch(result);
@@ -164,11 +159,11 @@ public class MainActivity extends AppCompatActivity implements CompoundButton.On
                 if(en){// 英語に翻訳して検索する
                     //英語に翻訳する
                     TranslateTask translate = new TranslateTask();
-                    translate.setOnCallBack(new TranslateTask.CallBackTask() {
+                    translate.setOnTranslateCallBack(new TranslateTask.TranslateCallBackTask() {
 
                         @Override
-                        public void CallBack(String result) {
-                            super.CallBack(result);
+                        public void TranslateCallBack(String result) {
+                            super.TranslateCallBack(result);
 
                             // 検索
                             webSearch(result);
@@ -190,11 +185,11 @@ public class MainActivity extends AppCompatActivity implements CompoundButton.On
                 if(en){// 英語に翻訳して検索する
                     //英語に翻訳する
                     TranslateTask translate = new TranslateTask();
-                    translate.setOnCallBack(new TranslateTask.CallBackTask() {
+                    translate.setOnTranslateCallBack(new TranslateTask.TranslateCallBackTask() {
 
                         @Override
-                        public void CallBack(String result) {
-                            super.CallBack(result);
+                        public void TranslateCallBack(String result) {
+                            super.TranslateCallBack(result);
 
                             // 検索
                             webSearch(result);
@@ -215,7 +210,17 @@ public class MainActivity extends AppCompatActivity implements CompoundButton.On
             @Override
             public void onClick(View view) {
                 AutosuggestTask suggest = new AutosuggestTask();
-                suggest.execute();
+                suggest.setOnAutosuggestCallBack(new AutosuggestTask.AutosuggestCallBackTask() {
+
+                    @Override
+                    public void AutosuggestCallBack(String result) {
+                        super.AutosuggestCallBack(result);
+
+                        System.out.println("Autosuggest is ："+result);
+                    }
+                });
+
+                suggest.execute("太陽光");
             }
         });
 
@@ -329,11 +334,11 @@ public class MainActivity extends AppCompatActivity implements CompoundButton.On
                 if(en){// 英語に翻訳して検索する
                     //英語に翻訳する
                     TranslateTask translate = new TranslateTask();
-                    translate.setOnCallBack(new TranslateTask.CallBackTask() {
+                    translate.setOnTranslateCallBack(new TranslateTask.TranslateCallBackTask() {
 
                         @Override
-                        public void CallBack(String result) {
-                            super.CallBack(result);
+                        public void TranslateCallBack(String result) {
+                            super.TranslateCallBack(result);
 
                             // 検索
                             webSearch(result);
