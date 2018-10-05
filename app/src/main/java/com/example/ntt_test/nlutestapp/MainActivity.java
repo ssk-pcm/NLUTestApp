@@ -102,8 +102,8 @@ public class MainActivity extends AppCompatActivity implements CompoundButton.On
         wsbtn1.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                input="太陽光";
-                if(en){// 英語に翻訳して検索する
+                input = "太陽光";
+                if (en) {// 英語に翻訳して検索する
                     //英語に翻訳する
                     TranslateTask translate = new TranslateTask();
                     translate.setOnTranslateCallBack(new TranslateTask.TranslateCallBackTask() {
@@ -119,7 +119,7 @@ public class MainActivity extends AppCompatActivity implements CompoundButton.On
 
                     //翻訳を実行
                     translate.execute(input);
-                }else{// 日本語のまま検索する
+                } else {// 日本語のまま検索する
                     // 検索
                     webSearch(input);
                 }
@@ -129,8 +129,8 @@ public class MainActivity extends AppCompatActivity implements CompoundButton.On
         wsbtn2.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                input=res1 + " " + res2;
-                if(en){// 英語に翻訳して検索する
+                input = res1 + " " + res2;
+                if (en) {// 英語に翻訳して検索する
                     //英語に翻訳する
                     TranslateTask translate = new TranslateTask();
                     translate.setOnTranslateCallBack(new TranslateTask.TranslateCallBackTask() {
@@ -146,7 +146,7 @@ public class MainActivity extends AppCompatActivity implements CompoundButton.On
 
                     //翻訳を実行
                     translate.execute(input);
-                }else{// 日本語のまま検索する
+                } else {// 日本語のまま検索する
                     // 検索
                     webSearch(input);
                 }
@@ -155,8 +155,8 @@ public class MainActivity extends AppCompatActivity implements CompoundButton.On
         wsbtn3.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                input=res1 + " " + res3;
-                if(en){// 英語に翻訳して検索する
+                input = res1 + " " + res3;
+                if (en) {// 英語に翻訳して検索する
                     //英語に翻訳する
                     TranslateTask translate = new TranslateTask();
                     translate.setOnTranslateCallBack(new TranslateTask.TranslateCallBackTask() {
@@ -172,7 +172,7 @@ public class MainActivity extends AppCompatActivity implements CompoundButton.On
 
                     //翻訳を実行
                     translate.execute(input);
-                }else{// 日本語のまま検索する
+                } else {// 日本語のまま検索する
                     // 検索
                     webSearch(input);
                 }
@@ -181,8 +181,8 @@ public class MainActivity extends AppCompatActivity implements CompoundButton.On
         wsbtn4.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                input=res2 + " " + res3;
-                if(en){// 英語に翻訳して検索する
+                input = res2 + " " + res3;
+                if (en) {// 英語に翻訳して検索する
                     //英語に翻訳する
                     TranslateTask translate = new TranslateTask();
                     translate.setOnTranslateCallBack(new TranslateTask.TranslateCallBackTask() {
@@ -198,29 +198,45 @@ public class MainActivity extends AppCompatActivity implements CompoundButton.On
 
                     //翻訳を実行
                     translate.execute(input);
-                }else{// 日本語のまま検索する
+                } else {// 日本語のまま検索する
                     // 検索
                     webSearch(input);
                 }
             }
         });
 
-        Button sss = (Button)findViewById(R.id.suggest);
+        Button sss = (Button) findViewById(R.id.suggest);
+
+
         sss.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                String sw ;
+                // メイン(UI)スレッドでHandlerのインスタンスを生成する
+                final Handler handler = new Handler();
+
                 AutosuggestTask suggest = new AutosuggestTask();
                 suggest.setOnAutosuggestCallBack(new AutosuggestTask.AutosuggestCallBackTask() {
 
                     @Override
-                    public void AutosuggestCallBack(String result) {
+                    public void AutosuggestCallBack(final String result) {
                         super.AutosuggestCallBack(result);
 
-                        System.out.println("Autosuggest is ："+result);
+                        // Handlerを使用してメイン(UI)スレッドに処理を依頼する
+                        handler.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                text1.setText("Result: " + result);
+                            }
+                        });
+
+                        System.out.println("Autosuggest is ：" + result);
                     }
                 });
 
-                suggest.execute("太陽光");
+
+                suggest.execute(res1);
+
             }
         });
 
@@ -232,7 +248,7 @@ public class MainActivity extends AppCompatActivity implements CompoundButton.On
                 nlu_username,
                 nlu_password
         );
-//        String text = "阪神の福留が同点ソロ本塁打を放ち試合を振り出しに戻した。";
+
         String text = inputtext;
         System.out.println(text);
 
@@ -331,7 +347,7 @@ public class MainActivity extends AppCompatActivity implements CompoundButton.On
                 input = candidates.get(0);
 
 
-                if(en){// 英語に翻訳して検索する
+                if (en) {// 英語に翻訳して検索する
                     //英語に翻訳する
                     TranslateTask translate = new TranslateTask();
                     translate.setOnTranslateCallBack(new TranslateTask.TranslateCallBackTask() {
@@ -347,7 +363,7 @@ public class MainActivity extends AppCompatActivity implements CompoundButton.On
 
                     //翻訳を実行
                     translate.execute(input);
-                }else{// 日本語のまま検索する
+                } else {// 日本語のまま検索する
                     // 検索
                     webSearch(input);
                 }
@@ -391,7 +407,7 @@ public class MainActivity extends AppCompatActivity implements CompoundButton.On
 
             }
         });
-        webSearchTask.execute("filetype:html "+word);
+        webSearchTask.execute("filetype:html " + word);
     }
 
     private void nextIntent() {
@@ -414,7 +430,7 @@ public class MainActivity extends AppCompatActivity implements CompoundButton.On
 
     @Override
     public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
-        if(b) {
+        if (b) {
             //do stuff when Switch is ON
             en = true;
         } else {
