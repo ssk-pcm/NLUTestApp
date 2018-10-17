@@ -12,7 +12,8 @@
         android:id="@+id/enswich"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="英語で検索　" />
+        android:text="AutoSuggest"
+        android:visibility="invisible" />
 
     <TextView
         android:id="@+id/result1"
@@ -54,7 +55,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_margin="10dp"
-        android:text="サジェスト" />
+        android:text="stop" />
 
     <LinearLayout
         android:layout_width="wrap_content"

@@ -1,6 +1,8 @@
 package com.example.ntt_test.nlutestapp;
 
 import android.content.Intent;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.Parcelable;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -24,7 +26,7 @@ public class ImageActivity extends AppCompatActivity {
     static String host = "https://api.cognitive.microsoft.com";
     static String path = "/bing/v7.0/images/search";
     static String searchTerm = "puppies";
-    private String search;
+    //private String search;
     private GridView mGridView;
     private Button nextbtn;
     private TextView wordtext;
@@ -42,62 +44,74 @@ public class ImageActivity extends AppCompatActivity {
         Intent intent = getIntent();
 
         list.addAll(intent.getStringArrayListExtra("listword"));
-        search = intent.getStringExtra("word");
-
-        ImageSearchTask test = new ImageSearchTask(new WebSearchTaskCallBack() {
-            @Override
-            public void onWebSearchCompleted(String result) {
-            }
-
-            @Override
-            public void onImageSearchCompleted(ArrayList<String> result) {
-                wordtext.setText(list.get(count));
-                for (int i = 0; i < result.size(); i++) {
-                    System.out.println(result.get(i));
-                    BitmapAdapter adapter = new BitmapAdapter(
-                            getApplicationContext(),
-                            result
-                    );
-                    mGridView.setAdapter(adapter);
-                }
-                count++;
-            }
-        });
-        test.execute(list.get(count));
+//        search = intent.getStringExtra("word");
+        // 画像検索開始
+        imageSearch();
 
         nextbtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (list.size() > count) {
-                    ImageSearchTask test = new ImageSearchTask(new WebSearchTaskCallBack() {
-                        @Override
-                        public void onWebSearchCompleted(String result) {
-                        }
-
-                        @Override
-                        public void onImageSearchCompleted(ArrayList<String> result) {
-                            wordtext.setText(list.get(count));
-                            for (int i = 0; i < result.size(); i++) {
-                                System.out.println(result.get(i));
-                                BitmapAdapter adapter = new BitmapAdapter(
-                                        getApplicationContext(),
-                                        result
-                                );
-                                mGridView.setAdapter(adapter);
-
-                            }
-                            count++;
-                        }
-                    });
-                    test.execute(list.get(count));
-                }
+                // 画像検索開始
+                imageSearch();
             }
         });
+
+        // 自動遷移
+        for (int i = 0;i < list.size();i++){
+            delayExecutio(i);
+        }
+
     }
 
     @Override
     protected void onResume() {
         super.onResume();
 
+    }
+
+    private void imageSearch() {
+        if (list.size() > count) {
+            ImageSearchTask test = new ImageSearchTask(new WebSearchTaskCallBack() {
+                @Override
+                public void onWebSearchCompleted(String result) {
+                }
+
+                @Override
+                public void onImageSearchCompleted(ArrayList<String> result) {
+                    wordtext.setText(list.get(count));
+                    for (int i = 0; i < result.size(); i++) {
+                        System.out.println(result.get(i));
+                        BitmapAdapter adapter = new BitmapAdapter(
+                                getApplicationContext(),
+                                result
+                        );
+                        mGridView.setAdapter(adapter);
+
+
+
+                    }
+                    count++;
+                    if(count == list.size()){
+                        new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
+                            @Override
+                            public void run() {
+                                finish();
+                            }
+                        }, 10000 );
+                    }
+                }
+            });
+            test.execute(list.get(count));
+        }
+    }
+
+    private void delayExecutio(int times) {
+        // 自動遷移
+        new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                imageSearch();
+            }
+        }, 10000 * (times + 1));
     }
 }

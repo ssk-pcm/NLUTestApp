@@ -6,6 +6,7 @@ import java.net.*;
 import javax.net.ssl.HttpsURLConnection;
 
 import android.os.AsyncTask;
+import android.os.Handler;
 
 /*
  * Gson: https://github.com/google/gson
@@ -28,7 +29,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 
-public class AutosuggestTask extends AsyncTask<String, Void, String> {
+public class AutosuggestTask extends AsyncTask<String, Void, String[]> {
     static String subscriptionKey = MainActivity.getContext().getResources().getString(R.string.suggest_key2);
 
     static String host = "https://api.cognitive.microsoft.com";
@@ -40,29 +41,30 @@ public class AutosuggestTask extends AsyncTask<String, Void, String> {
     private AutosuggestCallBackTask callbacktask;
 
     @Override
-    protected String doInBackground(String... params) {
-        String suggestWord = null;
-        query = params[0];
-        try {
-            String response = get_suggestions();
-            System.out.println(prettify(response));
+    protected String[] doInBackground(String... params) {
+        String suggestWord[] = new String[4];
 
-            JsonParser parser = new JsonParser();
-            JsonObject jo = parser.parse(response).getAsJsonObject();
+        for(int i = 0;i < 4;i++){
+            try {
+                String response = get_suggestions(params[i]);
+                System.out.println(prettify(response));
+                Thread.sleep(1000); //1000ミリ秒Sleepする
 
-            JsonObject suggestionGroups = jo.getAsJsonArray("suggestionGroups").get(0).getAsJsonObject();
-            JsonArray searchSuggestions = suggestionGroups.getAsJsonArray("searchSuggestions");
-            JsonObject query = searchSuggestions.get(0).getAsJsonObject();
-            suggestWord = query.get("query").toString();
-        } catch (Exception e) {
-            System.out.println(e);
+                JsonParser parser = new JsonParser();
+                JsonObject jo = parser.parse(response).getAsJsonObject();
+                JsonObject suggestionGroups = jo.getAsJsonArray("suggestionGroups").get(0).getAsJsonObject();
+                JsonArray searchSuggestions = suggestionGroups.getAsJsonArray("searchSuggestions");
+                JsonObject query = searchSuggestions.get(0).getAsJsonObject();
+                suggestWord[i] = query.get("query").toString();
+            } catch (Exception e) {
+                System.out.println("Suggest Error : "+e);
+            }
         }
-
         return suggestWord;
     }
 
     @Override
-    protected void onPostExecute(String result) {
+    protected void onPostExecute(String[] result) {
         super.onPostExecute(result);
         callbacktask.AutosuggestCallBack(result);
     }
@@ -75,11 +77,11 @@ public class AutosuggestTask extends AsyncTask<String, Void, String> {
      * コールバック用のstaticなclass
      */
     public static class AutosuggestCallBackTask {
-        public void AutosuggestCallBack(String result) {
+        public void AutosuggestCallBack(String[] result) {
         }
     }
 
-    public static String get_suggestions() throws Exception {
+    public static String get_suggestions(String query) throws Exception {
         String encoded_query = URLEncoder.encode(query, "UTF-8");
         String params = "?mkt=" + mkt + "&q=" + encoded_query;
         URL url = new URL(host + path + params);

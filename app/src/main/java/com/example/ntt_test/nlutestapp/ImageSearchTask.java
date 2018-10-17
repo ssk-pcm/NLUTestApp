@@ -37,12 +37,12 @@ public class ImageSearchTask extends AsyncTask<String, Void, Bitmap> {
     // the endpoint for your Bing Web search instance in your Azure dashboard.
     static String host = "https://api.cognitive.microsoft.com";
     static String path = "/bing/v7.0/images/search";
-    private Bitmap thumbnail;
+    private Bitmap thumbnail = null;
     private ArrayList<String> imageUrl;
     //    static String searchTerm = "タイヤ";
     private WebSearchTaskCallBack callBack;
 
-    static JsonObject resultObject;
+    static JsonObject imageObject;
 
     public ImageSearchTask(WebSearchTaskCallBack callBack) {
      //   mImageView = imageView;
@@ -60,41 +60,37 @@ public class ImageSearchTask extends AsyncTask<String, Void, Bitmap> {
     @Override
     protected Bitmap doInBackground(String... params) {
         //画像検索
-        imageGet(params[0]);
+        imageObject = imageGet(params[0]);
+//
+//        try {
+//            System.out.println("result : " + imageObject.getAsJsonArray("value").get(0).getAsJsonObject().get("thumbnailUrl"));
+//
+//            //画像のURLからBitmapを作成
+//            String hoge = imageObject.getAsJsonArray("value").get(0).getAsJsonObject().get("thumbnailUrl").toString();
+//            hoge = hoge.replaceAll("\"", "");
+//            URL url = new URL(hoge);
+//            //インプットストリームで画像を読み込む
+//            InputStream istream = url.openStream();
+//            //読み込んだファイルをビットマップに変換
+//            thumbnail = BitmapFactory.decodeStream(istream);
+//            //インプットストリームを閉じる
+//            istream.close();
 
-        try {
-            System.out.println("result : " + resultObject.getAsJsonArray("value").get(0).getAsJsonObject().get("thumbnailUrl"));
-            //画像検索で出てきた1番目の画像のサムネイルを返す
-            String m = resultObject.getAsJsonArray("value").get(0).getAsJsonObject().get("thumbnailUrl").toString();
-
-            //画像のURLからBitmapを作成
-            String hoge = resultObject.getAsJsonArray("value").get(0).getAsJsonObject().get("thumbnailUrl").toString();
-            hoge = hoge.replaceAll("\"", "");
-            URL url = new URL(hoge);
-            //インプットストリームで画像を読み込む
-            InputStream istream = url.openStream();
-            //読み込んだファイルをビットマップに変換
-            thumbnail = BitmapFactory.decodeStream(istream);
-            //インプットストリームを閉じる
-            istream.close();
-
-            int adda=resultObject.getAsJsonArray("value").size();
-
-            for(int i = 0;i < resultObject.getAsJsonArray("value").size();i++){
+            for(int i = 0;i < imageObject.getAsJsonArray("value").size();i++){
                 try{
-                    String addUrl =resultObject.getAsJsonArray("value").get(i).getAsJsonObject().get("thumbnailUrl").toString();
+                    String addUrl =imageObject.getAsJsonArray("value").get(i).getAsJsonObject().get("thumbnailUrl").toString();
                     addUrl = addUrl.replaceAll("\"", "");
                     imageUrl.add(addUrl);
                 }catch(NullPointerException e){
                     System.out.println("");
                 }
             }
-        } catch (IOException e) {
-            System.out.println("error");
-        }
-        catch (RuntimeException e){
-            System.out.println("error");
-        }
+//        } catch (IOException e) {
+//            System.out.println("error");
+//        }
+//        catch (RuntimeException e){
+//            System.out.println("error");
+//        }
 
         return thumbnail;
     }
@@ -143,7 +139,9 @@ public class ImageSearchTask extends AsyncTask<String, Void, Bitmap> {
     }
 
 
-    public static void imageGet(String searchTerm) {
+    public static JsonObject imageGet(String searchTerm) {
+        JsonObject resultObject = new JsonObject();
+
         if (subscriptionKey.length() != 32) {
             System.out.println("Invalid Bing Search API subscription key!");
             System.out.println("Please paste yours into the source code.");
@@ -169,6 +167,7 @@ public class ImageSearchTask extends AsyncTask<String, Void, Bitmap> {
             e.printStackTrace(System.out);
             System.exit(1);
         }
+        return resultObject;
     }
 
 }
