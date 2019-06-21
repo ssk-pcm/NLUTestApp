@@ -35,7 +35,8 @@ public class AutosuggestTask extends AsyncTask<String, Void, String[]> {
     static String host = "https://api.cognitive.microsoft.com";
     static String path = "/bing/v7.0/Suggestions";
 
-    static String mkt = "ja-JP";
+//    static String mkt = "ja-JP";
+    static String mkt = "en-US";
     static String query = " ";
 
     private AutosuggestCallBackTask callbacktask;
@@ -56,6 +57,7 @@ public class AutosuggestTask extends AsyncTask<String, Void, String[]> {
                 JsonArray searchSuggestions = suggestionGroups.getAsJsonArray("searchSuggestions");
                 JsonObject query = searchSuggestions.get(0).getAsJsonObject();
                 suggestWord[i] = query.get("query").toString();
+                System.out.println("サジェスト結果は"+suggestWord[i]);
             } catch (Exception e) {
                 System.out.println("Suggest Error : "+e);
             }

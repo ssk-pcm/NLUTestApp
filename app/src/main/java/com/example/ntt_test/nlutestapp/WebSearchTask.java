@@ -53,10 +53,8 @@ public class WebSearchTask extends AsyncTask<String, Void, String> {
         objectGet(params[0]);
 
         System.out.println("WebSearchResult : " + resultObject.getAsJsonObject("webPages").getAsJsonArray("value").get(0).getAsJsonObject().get("url"));
-        //画像検索で出てきた1番目の画像のサムネイルを返す
-        //String m = resultObject.getAsJsonArray("value").get(0).getAsJsonObject().get("snippet").toString();
 
-        //画像のURLからBitmapを作成
+        //URL取得
         String hoge = resultObject.getAsJsonObject("webPages").getAsJsonArray("value").get(0).getAsJsonObject().get("url").toString();
         hoge = hoge.replaceAll("\"", "");
 
