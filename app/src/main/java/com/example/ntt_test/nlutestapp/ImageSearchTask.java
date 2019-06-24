@@ -61,20 +61,6 @@ public class ImageSearchTask extends AsyncTask<String, Void, Bitmap> {
     protected Bitmap doInBackground(String... params) {
         //画像検索
         imageObject = imageGet(params[0]);
-//
-//        try {
-//            System.out.println("result : " + imageObject.getAsJsonArray("value").get(0).getAsJsonObject().get("thumbnailUrl"));
-//
-//            //画像のURLからBitmapを作成
-//            String hoge = imageObject.getAsJsonArray("value").get(0).getAsJsonObject().get("thumbnailUrl").toString();
-//            hoge = hoge.replaceAll("\"", "");
-//            URL url = new URL(hoge);
-//            //インプットストリームで画像を読み込む
-//            InputStream istream = url.openStream();
-//            //読み込んだファイルをビットマップに変換
-//            thumbnail = BitmapFactory.decodeStream(istream);
-//            //インプットストリームを閉じる
-//            istream.close();
 
             for(int i = 0;i < imageObject.getAsJsonArray("value").size();i++){
                 try{
@@ -85,13 +71,6 @@ public class ImageSearchTask extends AsyncTask<String, Void, Bitmap> {
                     System.out.println("");
                 }
             }
-//        } catch (IOException e) {
-//            System.out.println("error");
-//        }
-//        catch (RuntimeException e){
-//            System.out.println("error");
-//        }
-
         return thumbnail;
     }
 
@@ -125,7 +104,6 @@ public class ImageSearchTask extends AsyncTask<String, Void, Bitmap> {
                 results.relevantHeaders.put(header, headers.get(header).get(0));
             }
         }
-
         stream.close();
         return results;
     }

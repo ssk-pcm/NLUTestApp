@@ -26,6 +26,11 @@ import com.ibm.watson.developer_cloud.natural_language_understanding.v1.model.Ca
 import com.ibm.watson.developer_cloud.natural_language_understanding.v1.model.ConceptsOptions;
 import com.ibm.watson.developer_cloud.natural_language_understanding.v1.model.Features;
 
+import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Locale;
 import java.util.Random;
@@ -325,6 +330,15 @@ public class MainActivity extends AppCompatActivity {
 
             if (candidates.size() > 0) {
                 input = candidates.get(0);
+
+                // 音声認識のtxt保存
+                saveFile(fileName, input);
+                if(input.length() == 0){
+                    textView.setText(R.string.no_text);
+                }
+                else{
+                    textView.setText(R.string.saved);
+                }
                 // 検索
                 webSearch(input);
             }
@@ -454,6 +468,41 @@ public class MainActivity extends AppCompatActivity {
         String str = "abcdefghijklmnopqrstuvwxyz";
 
         return str.substring(n + 1, n + 2);
+    }
+
+    // ファイルを保存
+    public void saveFile(String file, String str) {
+
+        // try-with-resources
+        try (FileOutputStream fileOutputstream = openFileOutput(file,
+                Context.MODE_PRIVATE);){
+
+            fileOutputstream.write(str.getBytes());
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    // ファイルを読み出し
+    public String readFile(String file) {
+        String text = null;
+
+        // try-with-resources
+        try (FileInputStream fileInputStream = openFileInput(file);
+             BufferedReader reader= new BufferedReader(
+                     new InputStreamReader(fileInputStream, "UTF-8"))) {
+
+            String lineBuffer;
+            while( (lineBuffer = reader.readLine()) != null ) {
+                text = lineBuffer ;
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return text;
     }
 
     public static Context getContext() {
