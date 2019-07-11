@@ -332,13 +332,13 @@ public class MainActivity extends AppCompatActivity {
                 input = candidates.get(0);
 
                 // 音声認識のtxt保存
-                saveFile(fileName, input);
-                if(input.length() == 0){
-                    textView.setText(R.string.no_text);
-                }
-                else{
-                    textView.setText(R.string.saved);
-                }
+//                saveFile(fileName, input);
+//                if(input.length() == 0){
+//                    textView.setText(R.string.no_text);
+//                }
+//                else{
+//                    textView.setText(R.string.saved);
+//                }
                 // 検索
                 webSearch(input);
             }
@@ -419,14 +419,14 @@ public class MainActivity extends AppCompatActivity {
         });
 
         suggest.execute(
-//                res[0] + " " + addKanamoji(),
-//                res[1] + " " + addKanamoji(),
-//                res[2] + " " + addKanamoji(),
-//                res[3] + " " + addKanamoji()
-                res[0] + " " + addEnglishLetter(),
-                res[1] + " " + addEnglishLetter(),
-                res[2] + " " + addEnglishLetter(),
-                res[3] + " " + addEnglishLetter()
+                res[0] + " " + addKanamoji(),
+                res[1] + " " + addKanamoji(),
+                res[2] + " " + addKanamoji(),
+                res[3] + " " + addKanamoji()
+//                res[0] + " " + addEnglishLetter(),
+//                res[1] + " " + addEnglishLetter(),
+//                res[2] + " " + addEnglishLetter(),
+//                res[3] + " " + addEnglishLetter()
         );
     }
 

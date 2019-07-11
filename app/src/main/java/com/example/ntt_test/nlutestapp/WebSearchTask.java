@@ -111,18 +111,6 @@ public class WebSearchTask extends AsyncTask<String, Void, String> {
 
 
         try {
-            /*
-            System.out.println("Searching the Web for: " + searchTerm);
-
-            SearchResults result = SearchImages(searchTerm);
-
-            System.out.println("\nRelevant HTTP Headers:\n");
-            for (String header : result.relevantHeaders.keySet())
-                System.out.println(header + ": " + result.relevantHeaders.get(header));
-
-            System.out.println("\nJSON Response:\n");
-
-            */
             SearchResults result = SearchItems(searchTerm);
             // 結果をコンソールで表示
             System.out.println(prettify(result.jsonResponse));

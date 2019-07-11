@@ -28,15 +28,21 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
+import org.xmlpull.v1.XmlPullParser;
+import org.xmlpull.v1.XmlPullParserException;
+import org.xmlpull.v1.XmlPullParserFactory;
+
 
 public class AutosuggestTask extends AsyncTask<String, Void, String[]> {
     static String subscriptionKey = MainActivity.getContext().getResources().getString(R.string.suggest_key2);
 
-    static String host = "https://api.cognitive.microsoft.com";
-    static String path = "/bing/v7.0/Suggestions";
+//    static String host = "https://api.cognitive.microsoft.com";
+//    static String path = "/bing/v7.0/Suggestions";
+    static String host = "https://www.google.com";
+    static String path = "/complete/search";
 
-//    static String mkt = "ja-JP";
-    static String mkt = "en-US";
+    static String mkt = "ja";
+//    static String mkt = "en-US";
     static String query = " ";
 
     private AutosuggestCallBackTask callbacktask;
@@ -49,7 +55,7 @@ public class AutosuggestTask extends AsyncTask<String, Void, String[]> {
             try {
                 String response = get_suggestions(params[i]);
                 System.out.println(prettify(response));
-                Thread.sleep(1000); //1000ミリ秒Sleepする
+//                Thread.sleep(1000); //1000ミリ秒Sleepする
 
                 JsonParser parser = new JsonParser();
                 JsonObject jo = parser.parse(response).getAsJsonObject();
@@ -85,7 +91,7 @@ public class AutosuggestTask extends AsyncTask<String, Void, String[]> {
 
     public static String get_suggestions(String query) throws Exception {
         String encoded_query = URLEncoder.encode(query, "UTF-8");
-        String params = "?mkt=" + mkt + "&q=" + encoded_query;
+        String params = "?hl=" + mkt + "&output=toolbar&q=" + encoded_query;
         URL url = new URL(host + path + params);
 
         HttpsURLConnection connection = (HttpsURLConnection) url.openConnection();
@@ -110,5 +116,24 @@ public class AutosuggestTask extends AsyncTask<String, Void, String[]> {
         JsonObject json = parser.parse(json_text).getAsJsonObject();
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
         return gson.toJson(json);
+    }
+
+    private void parseXml(String xmlString) throws XmlPullParserException, IOException {
+        XmlPullParserFactory factory = XmlPullParserFactory.newInstance();
+        XmlPullParser parser = factory.newPullParser();
+        parser.setInput(new StringReader(xmlString));
+
+        int eventType = parser.getEventType();
+
+        while (eventType != XmlPullParser.END_DOCUMENT) {
+            if (eventType == XmlPullParser.START_TAG) {
+                if (parser.getName().equals("suggestion")) {
+                    String keyword = parser.getAttributeValue(null, "data");
+                    System.out.println(keyword);
+                }
+            }
+
+            eventType = parser.next();
+        }
     }
 }
