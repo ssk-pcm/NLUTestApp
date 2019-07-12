@@ -3,6 +3,7 @@ package com.example.ntt_test.nlutestapp;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.res.AssetManager;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.util.Log;
@@ -12,25 +13,20 @@ import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.PrintStream;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.HashMap;
-import java.util.Set;
 
 import javax.net.ssl.HttpsURLConnection;
 
 public class GoogleSearchTask extends AsyncTask<Void, Void, JSONObject> {
 
-    private final String key = "";
+    private final String key = MainActivity.getContext().getResources().getString(R.string.google_custom_search_api_key);
     private final String qry = "Android";
-    private final String ENDPOINT = "https://www.googleapis.com/customsearch/v1?key=" + key + "&cx=013036536707430787589:_pqjad5hr1a&q=" + qry + "&alt=json";
-    private final String API_NAME = "login.php";
-    private final String APP_PATH = "r87GUHdwef3r14F76DRTsdfh";
+    private final String cx = MainActivity.getContext().getResources().getString(R.string.google_api_cx);
+    private final String image_cx = MainActivity.getContext().getResources().getString(R.string.google_image_cx);
+    private final String ENDPOINT = "https://www.googleapis.com/customsearch/v1?key=" + key + "&cx="+ cx +"&q=" + qry + "&alt=json";
 
     GoogleSearchTask(String email, String password) {
 
@@ -45,7 +41,7 @@ public class GoogleSearchTask extends AsyncTask<Void, Void, JSONObject> {
 
         try {
             // URL設定
-            URL url = new URL(ENDPOINT + API_NAME);
+            URL url = new URL(ENDPOINT);
 
             httpCon = (HttpsURLConnection) url.openConnection();
             httpCon.setRequestMethod("GET");
