@@ -3,6 +3,7 @@ package com.example.ntt_test.nlutestapp;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Handler;
 import android.os.Looper;
 import android.speech.RecognitionListener;
@@ -31,7 +32,10 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Locale;
 import java.util.Random;
 
@@ -49,6 +53,9 @@ public class MainActivity extends AppCompatActivity {
     private Boolean en = false;
     private static Toast t;
     private SpeechRecognizer sr;
+    private String fileName ;
+    private Intent mIntent ;
+    private Intent mNextIntent;
 
     private static Context mContext;
 
@@ -56,8 +63,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        mContext = this;
-
+//        mContext = this;
         mContext = getApplicationContext();
         nlu_username = mContext.getString(R.string.nlu_username);
         nlu_password = mContext.getString(R.string.nlu_password);
@@ -72,12 +78,14 @@ public class MainActivity extends AppCompatActivity {
         Button wsbtn2 = findViewById(R.id.wsbtn2);
         Button wsbtn3 = findViewById(R.id.wsbtn3);
         Button wsbtn4 = findViewById(R.id.wsbtn4);
+        mIntent = getIntent();
+        mNextIntent = new Intent(MainActivity.this, ImageActivity.class);
+        fileName = getNowDate() + ".txt";
 
         // 言語選択 0:日本語、1:英語、2:オフライン、その他:General
         lang = 0;
 
         // Autosuggestを使うかの判定を受け取る
-        Intent mIntent = getIntent();
         en = mIntent.getBooleanExtra("isSuggest", false);
 
         buttonStart.setOnClickListener(new View.OnClickListener() {
@@ -318,34 +326,7 @@ public class MainActivity extends AppCompatActivity {
         startListening();
     }
 
-    // 音声認識の結果受け取り
-    @Override
-    protected void onActivityResult(final int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-
-        if (requestCode == REQUEST_CODE && resultCode == RESULT_OK) {
-            // 認識結果を ArrayList で取得
-            ArrayList<String> candidates =
-                    data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
-
-            if (candidates.size() > 0) {
-                input = candidates.get(0);
-
-                // 音声認識のtxt保存
-//                saveFile(fileName, input);
-//                if(input.length() == 0){
-//                    textView.setText(R.string.no_text);
-//                }
-//                else{
-//                    textView.setText(R.string.saved);
-//                }
-                // 検索
-                webSearch(input);
-            }
-        }
-    }
-
-    private void webSearch(String word) {
+        private void webSearch(String word) {
 
         WebSearchTask webSearchTask = new WebSearchTask(new WebSearchTaskCallBack() {
             @Override
@@ -378,14 +359,13 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void nextIntent() {
-        Intent intent = new Intent(MainActivity.this, ImageActivity.class);
         ArrayList<String> listWord = new ArrayList<>();
         if (!res[0].isEmpty()) {
             for (int i = 0; i < 4; i++) {
                 if (!res[i].isEmpty()) listWord.add(res[i]);
             }
-            intent.putStringArrayListExtra("listword", listWord);
-            startActivity(intent);
+            mNextIntent.putStringArrayListExtra("listword", listWord);
+            startActivity(mNextIntent);
         } else toast("検索ワードがありません");
     }
 
@@ -482,6 +462,12 @@ public class MainActivity extends AppCompatActivity {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public static String getNowDate(){
+        final DateFormat df = new SimpleDateFormat("yyyyMMdd_HHmmss");
+        final Date date = new Date(System.currentTimeMillis());
+        return df.format(date);
     }
 
     // ファイルを読み出し
@@ -611,7 +597,12 @@ public class MainActivity extends AppCompatActivity {
 //                resultsString += results_array.get(i) + ";";
 //            }
             resultsString += results_array.get(0);
-            // トーストを使って結果表示
+
+            // ファイルネームの保存
+            mNextIntent.putExtra("fileName",fileName);
+            // 音声認識のtxt保存
+            saveFile(fileName, resultsString);
+            // 結果表示
             text1.setText(resultsString);
             webSearch(resultsString);
         }

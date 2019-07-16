@@ -51,7 +51,6 @@ public class WebSearchTask extends AsyncTask<String, Void, String> {
     protected String doInBackground(String... params) {
         //Web検索
         objectGet(params[0]);
-
         System.out.println("WebSearchResult : " + resultObject.getAsJsonObject("webPages").getAsJsonArray("value").get(0).getAsJsonObject().get("url"));
 
         //URL取得

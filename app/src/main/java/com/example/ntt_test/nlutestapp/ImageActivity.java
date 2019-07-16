@@ -1,9 +1,9 @@
 package com.example.ntt_test.nlutestapp;
 
+import android.content.Context;
 import android.content.Intent;
 import android.os.Handler;
 import android.os.Looper;
-import android.os.Parcelable;
 import android.speech.RecognitionListener;
 import android.speech.RecognizerIntent;
 import android.speech.SpeechRecognizer;
@@ -12,10 +12,14 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
 import android.widget.GridView;
-import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Locale;
 
@@ -41,6 +45,8 @@ public class ImageActivity extends AppCompatActivity {
     private static Toast t;
     private SpeechRecognizer sr;
     private String input;
+    private Intent mIntent;
+    private String fileName, buffer;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,6 +55,8 @@ public class ImageActivity extends AppCompatActivity {
         mGridView = (GridView) findViewById(R.id.gridView);
         nextbtn = (Button) findViewById(R.id.nextbtn);
         wordtext = (TextView) findViewById(R.id.wordtext);
+        mIntent = getIntent();
+        fileName = mIntent.getStringExtra("fileName");
 
         Intent intent = getIntent();
 
@@ -68,7 +76,7 @@ public class ImageActivity extends AppCompatActivity {
         });
 
         // 自動遷移
-        for (int i = 0;i < list.size();i++){
+        for (int i = 0; i < list.size(); i++) {
             delayExecutio(i);
         }
     }
@@ -77,6 +85,12 @@ public class ImageActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
 
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        deleteFile(fileName);
     }
 
     private void imageSearch() {
@@ -98,13 +112,13 @@ public class ImageActivity extends AppCompatActivity {
                         mGridView.setAdapter(adapter);
                     }
                     count++;
-                    if(count == list.size()){
+                    if (count == list.size()) {
                         new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
                             @Override
                             public void run() {
                                 finish();
                             }
-                        }, 10000 );
+                        }, 10000);
                     }
                 }
             });
@@ -162,22 +176,39 @@ public class ImageActivity extends AppCompatActivity {
         startListening();
     }
 
-    // 音声認識の結果受け取り
-    @Override
-    protected void onActivityResult(final int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
+    // ファイルを保存
+    public void saveFile(String file, String str) {
 
-        if (requestCode == REQUEST_CODE && resultCode == RESULT_OK) {
-            // 認識結果を ArrayList で取得
-            ArrayList<String> candidates =
-                    data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
+        // try-with-resources
+        try (FileOutputStream fileOutputstream = openFileOutput(file,
+                Context.MODE_APPEND)) {
 
-            if (candidates.size() > 0) {
-                input = candidates.get(0);
-                // 検索
-                toast("認識した文字："+input);
-            }
+            fileOutputstream.write(str.getBytes());
+
+        } catch (IOException e) {
+            e.printStackTrace();
         }
+    }
+
+    // ファイルを読み出し
+    public String readFile(String file) {
+        String text = null;
+
+        // try-with-resources
+        try (FileInputStream fileInputStream = openFileInput(file);
+             BufferedReader reader = new BufferedReader(
+                     new InputStreamReader(fileInputStream, "UTF-8"))) {
+
+            String lineBuffer;
+            while ((lineBuffer = reader.readLine()) != null) {
+                text = lineBuffer;
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return text;
     }
 
     //トーストが連続して表示されるのを防ぐ
@@ -188,6 +219,7 @@ public class ImageActivity extends AppCompatActivity {
         t = Toast.makeText(this, message, Toast.LENGTH_SHORT);
         t.show();
     }
+
     // RecognitionListenerの定義
     // 中が空でも全てのメソッドを書く必要がある
     class listener implements RecognitionListener {
@@ -277,13 +309,12 @@ public class ImageActivity extends AppCompatActivity {
                     SpeechRecognizer.RESULTS_RECOGNITION);
             // 取得した文字列を結合
             String resultsString = "";
-//            for (int i = 0; i < results.size(); i++) {
-//                resultsString += results_array.get(i) + ";";
-//            }
+
             resultsString += results_array.get(0);
+            saveFile(fileName,resultsString);
             // トーストを使って結果表示
-//            text1.setText(resultsString);
-//            webSearch(resultsString);
+            buffer = readFile(fileName);
+            toast(buffer);
         }
 
         // サウンドレベルが変わったときに呼ばれる

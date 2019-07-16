@@ -23,9 +23,9 @@ import javax.net.ssl.HttpsURLConnection;
 public class GoogleSearchTask extends AsyncTask<Void, Void, JSONObject> {
 
     private final String key = MainActivity.getContext().getResources().getString(R.string.google_custom_search_api_key);
-    private final String qry = "Android";
     private final String cx = MainActivity.getContext().getResources().getString(R.string.google_api_cx);
     private final String image_cx = MainActivity.getContext().getResources().getString(R.string.google_image_cx);
+    private final String qry = "Android";
     private final String ENDPOINT = "https://www.googleapis.com/customsearch/v1?key=" + key + "&cx="+ cx +"&q=" + qry + "&alt=json";
 
     GoogleSearchTask(String email, String password) {
