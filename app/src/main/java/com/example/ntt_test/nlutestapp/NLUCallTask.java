@@ -11,9 +11,14 @@ import com.ibm.watson.developer_cloud.natural_language_understanding.v1.model.Ca
 import com.ibm.watson.developer_cloud.natural_language_understanding.v1.model.ConceptsOptions;
 import com.ibm.watson.developer_cloud.natural_language_understanding.v1.model.Features;
 
+import static com.example.ntt_test.nlutestapp.MainActivity.getContext;
+
 public class NLUCallTask extends AsyncTask<String,Void,JsonObject> {
-    private String nlu_username = MainActivity.getContext().getResources().getString(R.string.nlu_username);;
-    private String nlu_password = MainActivity.getContext().getResources().getString(R.string.nlu_password);;
+    private String nlu_username = getContext().getResources().getString(R.string.nlu_username);
+    private String nlu_password = getContext().getResources().getString(R.string.nlu_password);
+
+    private NLUCallBackTask callbacktask;
+    private String[] res = {"", "", "", ""};
 
     @Override
     protected JsonObject doInBackground(String... params) {
@@ -23,6 +28,7 @@ public class NLUCallTask extends AsyncTask<String,Void,JsonObject> {
                 nlu_password
         );
 
+        //URLを読み込み
         String text = params[0];
         System.out.println(text);
 
@@ -50,8 +56,34 @@ public class NLUCallTask extends AsyncTask<String,Void,JsonObject> {
 
         JsonParser parser = new JsonParser();
         JsonObject result = parser.parse(response.toString()).getAsJsonObject();
-//        System.out.println(result);
-
+        System.out.println(result);
+//                JSONObject json = new JSONObject();
+        // NLUの結果を抽出
+        for (int i = 0; i < 4; i++) {
+            if (i < result.getAsJsonArray("concepts").size()) {
+                res[i] = result.getAsJsonArray("concepts").get(i).getAsJsonObject().get("text").getAsString();
+            } else {
+                res[i] = "";
+            }
+        }
         return result;
+    }
+
+    @Override
+    protected void onPostExecute(JsonObject jsonObject) {
+        super.onPostExecute(jsonObject);
+    }
+
+    public void setOnTranslateCallBack(NLUCallBackTask _cbj) {
+        callbacktask = _cbj;
+    }
+
+
+    /**
+     * コールバック用のstaticなclass
+     */
+    public static class NLUCallBackTask {
+        public void NLUCallBack(String result) {
+        }
     }
 }

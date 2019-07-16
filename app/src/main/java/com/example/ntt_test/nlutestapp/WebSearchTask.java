@@ -51,12 +51,9 @@ public class WebSearchTask extends AsyncTask<String, Void, String> {
     protected String doInBackground(String... params) {
         //Web検索
         objectGet(params[0]);
-
         System.out.println("WebSearchResult : " + resultObject.getAsJsonObject("webPages").getAsJsonArray("value").get(0).getAsJsonObject().get("url"));
-        //画像検索で出てきた1番目の画像のサムネイルを返す
-        //String m = resultObject.getAsJsonArray("value").get(0).getAsJsonObject().get("snippet").toString();
 
-        //画像のURLからBitmapを作成
+        //URL取得
         String hoge = resultObject.getAsJsonObject("webPages").getAsJsonArray("value").get(0).getAsJsonObject().get("url").toString();
         hoge = hoge.replaceAll("\"", "");
 
@@ -113,18 +110,6 @@ public class WebSearchTask extends AsyncTask<String, Void, String> {
 
 
         try {
-            /*
-            System.out.println("Searching the Web for: " + searchTerm);
-
-            SearchResults result = SearchImages(searchTerm);
-
-            System.out.println("\nRelevant HTTP Headers:\n");
-            for (String header : result.relevantHeaders.keySet())
-                System.out.println(header + ": " + result.relevantHeaders.get(header));
-
-            System.out.println("\nJSON Response:\n");
-
-            */
             SearchResults result = SearchItems(searchTerm);
             // 結果をコンソールで表示
             System.out.println(prettify(result.jsonResponse));

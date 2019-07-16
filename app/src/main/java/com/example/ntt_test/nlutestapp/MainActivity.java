@@ -3,6 +3,7 @@ package com.example.ntt_test.nlutestapp;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Handler;
 import android.os.Looper;
 import android.speech.RecognitionListener;
@@ -26,7 +27,15 @@ import com.ibm.watson.developer_cloud.natural_language_understanding.v1.model.Ca
 import com.ibm.watson.developer_cloud.natural_language_understanding.v1.model.ConceptsOptions;
 import com.ibm.watson.developer_cloud.natural_language_understanding.v1.model.Features;
 
+import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Locale;
 import java.util.Random;
 
@@ -44,6 +53,9 @@ public class MainActivity extends AppCompatActivity {
     private Boolean en = false;
     private static Toast t;
     private SpeechRecognizer sr;
+    private String fileName ;
+    private Intent mIntent ;
+    private Intent mNextIntent;
 
     private static Context mContext;
 
@@ -51,8 +63,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        mContext = this;
-
+//        mContext = this;
         mContext = getApplicationContext();
         nlu_username = mContext.getString(R.string.nlu_username);
         nlu_password = mContext.getString(R.string.nlu_password);
@@ -67,19 +78,20 @@ public class MainActivity extends AppCompatActivity {
         Button wsbtn2 = findViewById(R.id.wsbtn2);
         Button wsbtn3 = findViewById(R.id.wsbtn3);
         Button wsbtn4 = findViewById(R.id.wsbtn4);
+        mIntent = getIntent();
+        mNextIntent = new Intent(MainActivity.this, ImageActivity.class);
+        fileName = getNowDate() + ".txt";
 
         // 言語選択 0:日本語、1:英語、2:オフライン、その他:General
         lang = 0;
 
         // Autosuggestを使うかの判定を受け取る
-        Intent mIntent = getIntent();
         en = mIntent.getBooleanExtra("isSuggest", false);
 
         buttonStart.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 // 音声認識を開始
-//                speech();
                 startListening();
             }
         });
@@ -111,7 +123,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 input = "エヴァンゲリオン";
-                if (en) {// 英語に翻訳して検索する
+                if (en) {
                     //英語に翻訳する
                     TranslateTask translate = new TranslateTask();
                     translate.setOnTranslateCallBack(new TranslateTask.TranslateCallBackTask() {
@@ -127,8 +139,8 @@ public class MainActivity extends AppCompatActivity {
 
                     //翻訳を実行
                     translate.execute(input);
-                } else {// 日本語のまま検索する
-                    // 検索
+                } else {
+                    // 日本語のまま検索する
                     webSearch(input);
                 }
             }
@@ -162,10 +174,7 @@ public class MainActivity extends AppCompatActivity {
         wsbtn4.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                text1.setText(addKanamoji());
-                text2.setText(addKanamoji());
-                text3.setText(addKanamoji());
-                text4.setText(addKanamoji());
+
             }
         });
 
@@ -175,7 +184,7 @@ public class MainActivity extends AppCompatActivity {
         sss.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-               stopListening();
+                stopListening();
             }
         });
 
@@ -200,6 +209,7 @@ public class MainActivity extends AppCompatActivity {
                 nlu_password
         );
 
+        //URLを読み込み
         String text = inputtext;
         System.out.println(text);
 
@@ -242,7 +252,6 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onDestroy() {
-
         super.onDestroy();
     }
 
@@ -278,26 +287,46 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    // 音声認識の結果受け取り
-    @Override
-    protected void onActivityResult(final int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-
-        if (requestCode == REQUEST_CODE && resultCode == RESULT_OK) {
-            // 認識結果を ArrayList で取得
-            ArrayList<String> candidates =
-                    data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
-
-            if (candidates.size() > 0) {
-                input = candidates.get(0);
-                // 検索
-                webSearch(input);
-
+    // 音声認識を開始する
+    protected void startListening() {
+        try {
+            if (sr == null) {
+                sr = SpeechRecognizer.createSpeechRecognizer(this);
+                if (!SpeechRecognizer.isRecognitionAvailable(getApplicationContext())) {
+                    Toast.makeText(getApplicationContext(), "音声認識が使えません",
+                            Toast.LENGTH_LONG).show();
+                    finish();
+                }
+                sr.setRecognitionListener(new listener());
             }
+            // インテントの作成
+            Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+            // 言語モデル指定
+            intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.JAPANESE.toString());
+//            intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,
+//                    RecognizerIntent.LANGUAGE_MODEL_WEB_SEARCH);
+            sr.startListening(intent);
+        } catch (Exception ex) {
+            Toast.makeText(getApplicationContext(), "startListening()でエラーが起こりました",
+                    Toast.LENGTH_LONG).show();
+            finish();
         }
     }
 
-    private void webSearch(String word) {
+    // 音声認識を終了する
+    protected void stopListening() {
+        if (sr != null) sr.destroy();
+        sr = null;
+//        toast("音声認識を停止しました");
+    }
+
+    // 音声認識を再開する
+    public void restartListeningService() {
+        stopListening();
+        startListening();
+    }
+
+        private void webSearch(String word) {
 
         WebSearchTask webSearchTask = new WebSearchTask(new WebSearchTaskCallBack() {
             @Override
@@ -330,14 +359,13 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void nextIntent() {
-        Intent intent = new Intent(MainActivity.this, ImageActivity.class);
         ArrayList<String> listWord = new ArrayList<>();
         if (!res[0].isEmpty()) {
             for (int i = 0; i < 4; i++) {
                 if (!res[i].isEmpty()) listWord.add(res[i]);
             }
-            intent.putStringArrayListExtra("listword", listWord);
-            startActivity(intent);
+            mNextIntent.putStringArrayListExtra("listword", listWord);
+            startActivity(mNextIntent);
         } else toast("検索ワードがありません");
     }
 
@@ -375,6 +403,10 @@ public class MainActivity extends AppCompatActivity {
                 res[1] + " " + addKanamoji(),
                 res[2] + " " + addKanamoji(),
                 res[3] + " " + addKanamoji()
+//                res[0] + " " + addEnglishLetter(),
+//                res[1] + " " + addEnglishLetter(),
+//                res[2] + " " + addEnglishLetter(),
+//                res[3] + " " + addEnglishLetter()
         );
     }
 
@@ -409,6 +441,56 @@ public class MainActivity extends AppCompatActivity {
         return str.substring(n + 1, n + 2);
     }
 
+    private static String addEnglishLetter() {
+        Random r = new Random();
+        int n = r.nextInt(26);
+
+        String str = "abcdefghijklmnopqrstuvwxyz";
+
+        return str.substring(n + 1, n + 2);
+    }
+
+    // ファイルを保存
+    public void saveFile(String file, String str) {
+
+        // try-with-resources
+        try (FileOutputStream fileOutputstream = openFileOutput(file,
+                Context.MODE_PRIVATE);){
+
+            fileOutputstream.write(str.getBytes());
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static String getNowDate(){
+        final DateFormat df = new SimpleDateFormat("yyyyMMdd_HHmmss");
+        final Date date = new Date(System.currentTimeMillis());
+        return df.format(date);
+    }
+
+    // ファイルを読み出し
+    public String readFile(String file) {
+        String text = null;
+
+        // try-with-resources
+        try (FileInputStream fileInputStream = openFileInput(file);
+             BufferedReader reader= new BufferedReader(
+                     new InputStreamReader(fileInputStream, "UTF-8"))) {
+
+            String lineBuffer;
+            while( (lineBuffer = reader.readLine()) != null ) {
+                text = lineBuffer ;
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return text;
+    }
+
     public static Context getContext() {
         return mContext;
     }
@@ -420,44 +502,6 @@ public class MainActivity extends AppCompatActivity {
         }
         t = Toast.makeText(this, message, Toast.LENGTH_SHORT);
         t.show();
-    }
-
-    // 音声認識を開始する
-    protected void startListening() {
-        try {
-            if (sr == null) {
-                sr = SpeechRecognizer.createSpeechRecognizer(this);
-                if (!SpeechRecognizer.isRecognitionAvailable(getApplicationContext())) {
-                    Toast.makeText(getApplicationContext(), "音声認識が使えません",
-                            Toast.LENGTH_LONG).show();
-                    finish();
-                }
-                sr.setRecognitionListener(new listener());
-            }
-            // インテントの作成
-            Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
-            // 言語モデル指定
-            intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,
-                    RecognizerIntent.LANGUAGE_MODEL_WEB_SEARCH);
-            sr.startListening(intent);
-        } catch (Exception ex) {
-            Toast.makeText(getApplicationContext(), "startListening()でエラーが起こりました",
-                    Toast.LENGTH_LONG).show();
-            finish();
-        }
-    }
-
-    // 音声認識を終了する
-    protected void stopListening() {
-        if (sr != null) sr.destroy();
-        sr = null;
-        toast("音声認識を停止しました");
-    }
-
-    // 音声認識を再開する
-    public void restartListeningService() {
-        stopListening();
-        startListening();
     }
 
     // RecognitionListenerの定義
@@ -553,7 +597,12 @@ public class MainActivity extends AppCompatActivity {
 //                resultsString += results_array.get(i) + ";";
 //            }
             resultsString += results_array.get(0);
-            // トーストを使って結果表示
+
+            // ファイルネームの保存
+            mNextIntent.putExtra("fileName",fileName);
+            // 音声認識のtxt保存
+            saveFile(fileName, resultsString);
+            // 結果表示
             text1.setText(resultsString);
             webSearch(resultsString);
         }
