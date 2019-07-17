@@ -13,19 +13,18 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
-import android.widget.CompoundButton;
-import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.ibm.watson.developer_cloud.natural_language_understanding.v1.NaturalLanguageUnderstanding;
-import com.ibm.watson.developer_cloud.natural_language_understanding.v1.model.AnalysisResults;
-import com.ibm.watson.developer_cloud.natural_language_understanding.v1.model.AnalyzeOptions;
-import com.ibm.watson.developer_cloud.natural_language_understanding.v1.model.CategoriesOptions;
-import com.ibm.watson.developer_cloud.natural_language_understanding.v1.model.ConceptsOptions;
-import com.ibm.watson.developer_cloud.natural_language_understanding.v1.model.Features;
+import com.ibm.watson.natural_language_understanding.v1.NaturalLanguageUnderstanding;
+import com.ibm.watson.natural_language_understanding.v1.model.AnalysisResults;
+import com.ibm.watson.natural_language_understanding.v1.model.AnalyzeOptions;
+import com.ibm.watson.natural_language_understanding.v1.model.CategoriesOptions;
+import com.ibm.watson.natural_language_understanding.v1.model.ConceptsOptions;
+import com.ibm.watson.natural_language_understanding.v1.model.Features;
+
 
 import java.io.BufferedReader;
 import java.io.FileInputStream;
@@ -204,7 +203,7 @@ public class MainActivity extends AppCompatActivity {
 
     protected JsonObject callNLU(String inputtext) {
         NaturalLanguageUnderstanding service = new NaturalLanguageUnderstanding(
-                "2018-03-16",
+                "2019-07-12",
                 nlu_username,
                 nlu_password
         );
@@ -213,7 +212,8 @@ public class MainActivity extends AppCompatActivity {
         String text = inputtext;
         System.out.println(text);
 
-        CategoriesOptions categories = new CategoriesOptions();
+        CategoriesOptions categories = new CategoriesOptions.Builder()
+                .build();
 
         ConceptsOptions concepts = new ConceptsOptions.Builder()
                 .limit(4)
@@ -231,7 +231,8 @@ public class MainActivity extends AppCompatActivity {
 
         AnalysisResults response = service
                 .analyze(parameters)
-                .execute();
+                .execute()
+                .getResult();
         System.out.println(response); //Object形式で帰ってくる
 
 

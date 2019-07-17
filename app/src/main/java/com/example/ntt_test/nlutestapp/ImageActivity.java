@@ -25,9 +25,6 @@ import java.util.Locale;
 
 public class ImageActivity extends AppCompatActivity {
 
-    // Replace the subscriptionKey string value with your valid subscription key.
-    static String subscriptionKey = "678a4900e849413380f04c00066662a5";
-
     // Verify the endpoint URI.  At this writing, only one endpoint is used for Bing
     // search APIs.  In the future, regional endpoints may be available.  If you
     // encounter unexpected authorization errors, double-check this value against
@@ -77,7 +74,7 @@ public class ImageActivity extends AppCompatActivity {
 
         // 自動遷移
         for (int i = 0; i < list.size(); i++) {
-            delayExecutio(i);
+            delayExecute(i);
         }
     }
 
@@ -91,6 +88,16 @@ public class ImageActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         deleteFile(fileName);
+    }
+    private void delayExecute(int times) {
+        // 自動遷移
+        new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                imageSearch();
+                startListening();
+            }
+        }, 10000 * (times + 1));
     }
 
     private void imageSearch() {
@@ -116,7 +123,12 @@ public class ImageActivity extends AppCompatActivity {
                         new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
                             @Override
                             public void run() {
-                                finish();
+                                // Listの最後に実行される
+//                                finish();
+                                NLUCallTask nluTask = new NLUCallTask();
+                                nluTask.setOnNLUCallBack(new NLUCallTask.NLUCallBackTask(){
+
+                                });
                             }
                         }, 10000);
                     }
@@ -124,17 +136,6 @@ public class ImageActivity extends AppCompatActivity {
             });
             test.execute(list.get(count));
         }
-    }
-
-    private void delayExecutio(int times) {
-        // 自動遷移
-        new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                imageSearch();
-                startListening();
-            }
-        }, 10000 * (times + 1));
     }
 
     // 音声認識を開始する
