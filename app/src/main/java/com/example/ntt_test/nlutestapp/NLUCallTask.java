@@ -27,7 +27,7 @@ public class NLUCallTask extends AsyncTask<String,Void,JsonObject> {
                 nlu_password
         );
 
-        //URLを読み込み
+        //テキストを読み込み
         String text = params[0];
         System.out.println(text);
 
@@ -44,7 +44,7 @@ public class NLUCallTask extends AsyncTask<String,Void,JsonObject> {
                 .build();
 
         AnalyzeOptions parameters = new AnalyzeOptions.Builder()
-                .url(text)
+                .text(text)
                 .features(features)
                 .build();
 
@@ -60,19 +60,20 @@ public class NLUCallTask extends AsyncTask<String,Void,JsonObject> {
         System.out.println(result);
 //                JSONObject json = new JSONObject();
         // NLUの結果を抽出
-        for (int i = 0; i < 4; i++) {
-            if (i < result.getAsJsonArray("concepts").size()) {
-                res[i] = result.getAsJsonArray("concepts").get(i).getAsJsonObject().get("text").getAsString();
-            } else {
-                res[i] = "";
-            }
-        }
+//        for (int i = 0; i < 4; i++) {
+//            if (i < result.getAsJsonArray("concepts").size()) {
+//                res[i] = result.getAsJsonArray("concepts").get(i).getAsJsonObject().get("text").getAsString();
+//            } else {
+//                res[i] = "";
+//            }
+//        }
         return result;
     }
 
     @Override
     protected void onPostExecute(JsonObject jsonObject) {
         super.onPostExecute(jsonObject);
+        callbacktask.NLUCallBack(jsonObject);
     }
 
     public void setOnNLUCallBack(NLUCallBackTask _cbj) {
@@ -84,7 +85,7 @@ public class NLUCallTask extends AsyncTask<String,Void,JsonObject> {
      * コールバック用のstaticなclass
      */
     public static class NLUCallBackTask {
-        public void NLUCallBack(String result) {
+        public void NLUCallBack(JsonObject result) {
         }
     }
 }

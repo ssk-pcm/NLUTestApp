@@ -9,11 +9,14 @@ import android.speech.RecognizerIntent;
 import android.speech.SpeechRecognizer;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.GridView;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import com.google.gson.JsonObject;
 
 import java.io.BufferedReader;
 import java.io.FileInputStream;
@@ -44,6 +47,7 @@ public class ImageActivity extends AppCompatActivity {
     private String input;
     private Intent mIntent;
     private String fileName, buffer;
+    private String[] res = {"", "", "", ""};
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -59,6 +63,11 @@ public class ImageActivity extends AppCompatActivity {
 
         list.addAll(intent.getStringArrayListExtra("listword"));
 //        search = intent.getStringExtra("word");
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
         // 画像検索開始
         imageSearch();
         // 同時に認識開始
@@ -76,12 +85,6 @@ public class ImageActivity extends AppCompatActivity {
         for (int i = 0; i < list.size(); i++) {
             delayExecute(i);
         }
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-
     }
 
     @Override
@@ -124,11 +127,23 @@ public class ImageActivity extends AppCompatActivity {
                             @Override
                             public void run() {
                                 // Listの最後に実行される
-//                                finish();
                                 NLUCallTask nluTask = new NLUCallTask();
                                 nluTask.setOnNLUCallBack(new NLUCallTask.NLUCallBackTask(){
+                                    @Override
+                                    public void NLUCallBack(JsonObject result) {
+                                        super.NLUCallBack(result);
 
+                                        for (int i = 0; i < 4; i++) {
+                                            if (i < result.getAsJsonArray("concepts").size()) {
+                                                res[i] = result.getAsJsonArray("concepts").get(i).getAsJsonObject().get("text").getAsString();
+                                            } else {
+                                                res[i] = "";
+                                            }
+                                        }
+                                        Log.d("second NLU",result.toString());
+                                    }
                                 });
+                                nluTask.execute(readFile(fileName));
                             }
                         }, 10000);
                     }
