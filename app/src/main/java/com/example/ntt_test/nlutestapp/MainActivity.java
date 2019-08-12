@@ -13,19 +13,18 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
-import android.widget.CompoundButton;
-import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.ibm.watson.developer_cloud.natural_language_understanding.v1.NaturalLanguageUnderstanding;
-import com.ibm.watson.developer_cloud.natural_language_understanding.v1.model.AnalysisResults;
-import com.ibm.watson.developer_cloud.natural_language_understanding.v1.model.AnalyzeOptions;
-import com.ibm.watson.developer_cloud.natural_language_understanding.v1.model.CategoriesOptions;
-import com.ibm.watson.developer_cloud.natural_language_understanding.v1.model.ConceptsOptions;
-import com.ibm.watson.developer_cloud.natural_language_understanding.v1.model.Features;
+import com.ibm.watson.natural_language_understanding.v1.NaturalLanguageUnderstanding;
+import com.ibm.watson.natural_language_understanding.v1.model.AnalysisResults;
+import com.ibm.watson.natural_language_understanding.v1.model.AnalyzeOptions;
+import com.ibm.watson.natural_language_understanding.v1.model.CategoriesOptions;
+import com.ibm.watson.natural_language_understanding.v1.model.ConceptsOptions;
+import com.ibm.watson.natural_language_understanding.v1.model.Features;
+
 
 import java.io.BufferedReader;
 import java.io.FileInputStream;
@@ -53,9 +52,10 @@ public class MainActivity extends AppCompatActivity {
     private Boolean en = false;
     private static Toast t;
     private SpeechRecognizer sr;
-    private String fileName ;
-    private Intent mIntent ;
+    private String fileName;
+    private Intent mIntent;
     private Intent mNextIntent;
+    private Boolean listenFlag = true;
 
     private static Context mContext;
 
@@ -92,6 +92,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 // 音声認識を開始
+                listenFlag = true;
                 startListening();
             }
         });
@@ -193,7 +194,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        startListening();
+        if (listenFlag) startListening();
     }
 
     @Override
@@ -203,8 +204,14 @@ public class MainActivity extends AppCompatActivity {
     }
 
     protected JsonObject callNLU(String inputtext) {
+
+        try{
+
+        }catch(RuntimeException e){
+
+        }
         NaturalLanguageUnderstanding service = new NaturalLanguageUnderstanding(
-                "2018-03-16",
+                "2019-07-12",
                 nlu_username,
                 nlu_password
         );
@@ -213,7 +220,8 @@ public class MainActivity extends AppCompatActivity {
         String text = inputtext;
         System.out.println(text);
 
-        CategoriesOptions categories = new CategoriesOptions();
+        CategoriesOptions categories = new CategoriesOptions.Builder()
+                .build();
 
         ConceptsOptions concepts = new ConceptsOptions.Builder()
                 .limit(4)
@@ -231,7 +239,8 @@ public class MainActivity extends AppCompatActivity {
 
         AnalysisResults response = service
                 .analyze(parameters)
-                .execute();
+                .execute()
+                .getResult();
         System.out.println(response); //Object形式で帰ってくる
 
 
@@ -326,7 +335,7 @@ public class MainActivity extends AppCompatActivity {
         startListening();
     }
 
-        private void webSearch(String word) {
+    private void webSearch(String word) {
 
         WebSearchTask webSearchTask = new WebSearchTask(new WebSearchTaskCallBack() {
             @Override
@@ -365,6 +374,8 @@ public class MainActivity extends AppCompatActivity {
                 if (!res[i].isEmpty()) listWord.add(res[i]);
             }
             mNextIntent.putStringArrayListExtra("listword", listWord);
+            mNextIntent.putExtra("isSuggest",en);
+            listenFlag = false;
             startActivity(mNextIntent);
         } else toast("検索ワードがありません");
     }
@@ -455,7 +466,7 @@ public class MainActivity extends AppCompatActivity {
 
         // try-with-resources
         try (FileOutputStream fileOutputstream = openFileOutput(file,
-                Context.MODE_PRIVATE);){
+                Context.MODE_PRIVATE);) {
 
             fileOutputstream.write(str.getBytes());
 
@@ -464,7 +475,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    public static String getNowDate(){
+    public static String getNowDate() {
         final DateFormat df = new SimpleDateFormat("yyyyMMdd_HHmmss");
         final Date date = new Date(System.currentTimeMillis());
         return df.format(date);
@@ -476,12 +487,12 @@ public class MainActivity extends AppCompatActivity {
 
         // try-with-resources
         try (FileInputStream fileInputStream = openFileInput(file);
-             BufferedReader reader= new BufferedReader(
+             BufferedReader reader = new BufferedReader(
                      new InputStreamReader(fileInputStream, "UTF-8"))) {
 
             String lineBuffer;
-            while( (lineBuffer = reader.readLine()) != null ) {
-                text = lineBuffer ;
+            while ((lineBuffer = reader.readLine()) != null) {
+                text = lineBuffer;
             }
 
         } catch (IOException e) {
@@ -599,7 +610,7 @@ public class MainActivity extends AppCompatActivity {
             resultsString += results_array.get(0);
 
             // ファイルネームの保存
-            mNextIntent.putExtra("fileName",fileName);
+            mNextIntent.putExtra("fileName", fileName);
             // 音声認識のtxt保存
             saveFile(fileName, resultsString);
             // 結果表示
