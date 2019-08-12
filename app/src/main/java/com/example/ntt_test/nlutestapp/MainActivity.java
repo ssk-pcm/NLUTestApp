@@ -52,9 +52,10 @@ public class MainActivity extends AppCompatActivity {
     private Boolean en = false;
     private static Toast t;
     private SpeechRecognizer sr;
-    private String fileName ;
-    private Intent mIntent ;
+    private String fileName;
+    private Intent mIntent;
     private Intent mNextIntent;
+    private Boolean listenFlag = true;
 
     private static Context mContext;
 
@@ -91,6 +92,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 // 音声認識を開始
+                listenFlag = true;
                 startListening();
             }
         });
@@ -192,7 +194,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        startListening();
+        if (listenFlag) startListening();
     }
 
     @Override
@@ -202,6 +204,12 @@ public class MainActivity extends AppCompatActivity {
     }
 
     protected JsonObject callNLU(String inputtext) {
+
+        try{
+
+        }catch(RuntimeException e){
+
+        }
         NaturalLanguageUnderstanding service = new NaturalLanguageUnderstanding(
                 "2019-07-12",
                 nlu_username,
@@ -327,7 +335,7 @@ public class MainActivity extends AppCompatActivity {
         startListening();
     }
 
-        private void webSearch(String word) {
+    private void webSearch(String word) {
 
         WebSearchTask webSearchTask = new WebSearchTask(new WebSearchTaskCallBack() {
             @Override
@@ -366,6 +374,8 @@ public class MainActivity extends AppCompatActivity {
                 if (!res[i].isEmpty()) listWord.add(res[i]);
             }
             mNextIntent.putStringArrayListExtra("listword", listWord);
+            mNextIntent.putExtra("isSuggest",en);
+            listenFlag = false;
             startActivity(mNextIntent);
         } else toast("検索ワードがありません");
     }
@@ -456,7 +466,7 @@ public class MainActivity extends AppCompatActivity {
 
         // try-with-resources
         try (FileOutputStream fileOutputstream = openFileOutput(file,
-                Context.MODE_PRIVATE);){
+                Context.MODE_PRIVATE);) {
 
             fileOutputstream.write(str.getBytes());
 
@@ -465,7 +475,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    public static String getNowDate(){
+    public static String getNowDate() {
         final DateFormat df = new SimpleDateFormat("yyyyMMdd_HHmmss");
         final Date date = new Date(System.currentTimeMillis());
         return df.format(date);
@@ -477,12 +487,12 @@ public class MainActivity extends AppCompatActivity {
 
         // try-with-resources
         try (FileInputStream fileInputStream = openFileInput(file);
-             BufferedReader reader= new BufferedReader(
+             BufferedReader reader = new BufferedReader(
                      new InputStreamReader(fileInputStream, "UTF-8"))) {
 
             String lineBuffer;
-            while( (lineBuffer = reader.readLine()) != null ) {
-                text = lineBuffer ;
+            while ((lineBuffer = reader.readLine()) != null) {
+                text = lineBuffer;
             }
 
         } catch (IOException e) {
@@ -600,7 +610,7 @@ public class MainActivity extends AppCompatActivity {
             resultsString += results_array.get(0);
 
             // ファイルネームの保存
-            mNextIntent.putExtra("fileName",fileName);
+            mNextIntent.putExtra("fileName", fileName);
             // 音声認識のtxt保存
             saveFile(fileName, resultsString);
             // 結果表示

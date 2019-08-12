@@ -9,7 +9,6 @@ import android.speech.RecognizerIntent;
 import android.speech.SpeechRecognizer;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.GridView;
@@ -17,6 +16,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
 
 import java.io.BufferedReader;
 import java.io.FileInputStream;
@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Locale;
+import java.util.Random;
 
 public class ImageActivity extends AppCompatActivity {
 
@@ -38,14 +39,16 @@ public class ImageActivity extends AppCompatActivity {
     //private String search;
     private GridView mGridView;
     private Button nextbtn;
-    private TextView wordtext;
+    private TextView wordtext,cv;
     private int count = 0;
     private ArrayList<String> list = new ArrayList<>();
     private static final int REQUEST_CODE = 1000;
     private static Toast t;
     private SpeechRecognizer sr;
     private String input;
-    private Intent mIntent;
+    private Intent getDataIntent, restartIntent;
+    private Boolean restartFlag = false;
+    private Boolean isSuggest = false;
     private String fileName, buffer;
     private String[] res = {"", "", "", ""};
 
@@ -56,12 +59,12 @@ public class ImageActivity extends AppCompatActivity {
         mGridView = (GridView) findViewById(R.id.gridView);
         nextbtn = (Button) findViewById(R.id.nextbtn);
         wordtext = (TextView) findViewById(R.id.wordtext);
-        mIntent = getIntent();
-        fileName = mIntent.getStringExtra("fileName");
+        cv = (TextView)findViewById(R.id.countview);
+        getDataIntent = getIntent();
+        restartIntent = new Intent(ImageActivity.this,ImageActivity.class);
+        fileName = getDataIntent.getStringExtra("fileName");
 
-        Intent intent = getIntent();
-
-        list.addAll(intent.getStringArrayListExtra("listword"));
+        list.addAll(getDataIntent.getStringArrayListExtra("listword"));
 //        search = intent.getStringExtra("word");
     }
 
@@ -69,7 +72,7 @@ public class ImageActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         // 画像検索開始
-        imageSearch();
+        imageSearch(0);
         // 同時に認識開始
         startListening();
 
@@ -77,12 +80,12 @@ public class ImageActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 // 画像検索開始
-                imageSearch();
+//                imageSearch(count);
             }
         });
 
         // 自動遷移
-        for (int i = 0; i < list.size(); i++) {
+        for (int i = 1; i < list.size(); i++) {
             delayExecute(i);
         }
     }
@@ -90,21 +93,26 @@ public class ImageActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        deleteFile(fileName);
+        if (restartFlag) {
+            restartFlag = false;
+          //  restartIntent.setClass(ImageActivity, ImageActivity.getClass());
+            startActivity(restartIntent);
+        } else deleteFile(fileName);
     }
+
     private void delayExecute(int times) {
         // 自動遷移
         new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
             @Override
             public void run() {
-                imageSearch();
+                imageSearch(times);
                 startListening();
             }
-        }, 10000 * (times + 1));
+        }, 10000 * (times));
     }
 
-    private void imageSearch() {
-        if (list.size() > count) {
+    private void imageSearch(int num) {
+        if (list.size() > num) {
             ImageSearchTask test = new ImageSearchTask(new WebSearchTaskCallBack() {
                 @Override
                 public void onWebSearchCompleted(String result) {
@@ -112,7 +120,8 @@ public class ImageActivity extends AppCompatActivity {
 
                 @Override
                 public void onImageSearchCompleted(ArrayList<String> result) {
-                    wordtext.setText(list.get(count));
+                    wordtext.setText(list.get(num));
+                    cv.setText(String.valueOf(num));
                     for (int i = 0; i < result.size(); i++) {
                         System.out.println(result.get(i));
                         BitmapAdapter adapter = new BitmapAdapter(
@@ -121,26 +130,39 @@ public class ImageActivity extends AppCompatActivity {
                         );
                         mGridView.setAdapter(adapter);
                     }
-                    count++;
-                    if (count == list.size()) {
+                    if (num + 1 == list.size()) {
                         new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
                             @Override
                             public void run() {
                                 // Listの最後に実行される
                                 NLUCallTask nluTask = new NLUCallTask();
-                                nluTask.setOnNLUCallBack(new NLUCallTask.NLUCallBackTask(){
+                                nluTask.setOnNLUCallBack(new NLUCallTask.NLUCallBackTask() {
                                     @Override
                                     public void NLUCallBack(JsonObject result) {
                                         super.NLUCallBack(result);
-
-                                        for (int i = 0; i < 4; i++) {
-                                            if (i < result.getAsJsonArray("concepts").size()) {
-                                                res[i] = result.getAsJsonArray("concepts").get(i).getAsJsonObject().get("text").getAsString();
-                                            } else {
-                                                res[i] = "";
+                                        try{
+                                            for (int i = 0; i < 4; i++) {
+                                                if (i < result.getAsJsonArray("concepts").size()) {
+                                                    res[i] = result.getAsJsonArray("concepts").get(i).getAsJsonObject().get("text").getAsString();
+                                                } else {
+                                                    res[i] = "";
+                                                }
                                             }
+                                        }catch(JsonParseException e){
+                                            nluTask.execute(readFile(fileName));
                                         }
-                                        Log.d("second NLU",result.toString());
+                                        ArrayList<String> listWord = new ArrayList<>();
+                                        if (!res[0].isEmpty()) {
+                                            for (int i = 0; i < 4; i++) {
+                                                if (!res[i].isEmpty()) listWord.add(res[i]);
+                                            }
+                                            restartIntent.putStringArrayListExtra("listword", listWord);
+                                            // ファイルネームの保存
+                                            restartIntent.putExtra("fileName", fileName);
+                                            restartFlag = true;
+                                        } else toast("検索ワードがありません");
+
+                                        finish();
                                     }
                                 });
                                 nluTask.execute(readFile(fileName));
@@ -149,8 +171,78 @@ public class ImageActivity extends AppCompatActivity {
                     }
                 }
             });
-            test.execute(list.get(count));
+            test.execute(list.get(num));
         }
+    }
+
+//    private void addSuggest() {
+//        final AutosuggestTask suggest = new AutosuggestTask();
+//        suggest.setOnAutosuggestCallBack(new AutosuggestTask.AutosuggestCallBackTask() {
+//
+//            @Override
+//            public void AutosuggestCallBack(final String[] result) {
+//                super.AutosuggestCallBack(result);
+//
+//                for (int i = 0; i < 4; i++) {
+//                    if (result[i] != null) {
+//                        res[i] = result[i];
+//                    }
+//                    System.out.println("res" + i + " is ：" + res[i]);
+//                }
+//
+//                final Handler handler = new Handler();
+//                // Handlerを使用してメイン(UI)スレッドに処理を依頼する
+//                handler.post(() -> {
+//                    text1.setText("Result: " + res[0]);
+//                    text2.setText("Result: " + res[1]);
+//                    text3.setText("Result: " + res[2]);
+//                    text4.setText("Result: " + res[3]);
+//
+//                    nextIntent();
+//                });
+//
+//            }
+//        });
+//
+//        suggest.execute(
+//                res[0] + " " + addKanamoji(),
+//                res[1] + " " + addKanamoji(),
+//                res[2] + " " + addKanamoji(),
+//                res[3] + " " + addKanamoji()
+////                res[0] + " " + addEnglishLetter(),
+////                res[1] + " " + addEnglishLetter(),
+////                res[2] + " " + addEnglishLetter(),
+////                res[3] + " " + addEnglishLetter()
+//        );
+//    }
+//
+//    private void noSuggest() {
+//        final Handler mhandler = new Handler(Looper.getMainLooper());
+//        // Handlerを使用してメイン(UI)スレッドに処理を依頼する
+//        mhandler.post(() -> {
+//            text1.setText("Result: " + res[0]);
+//            text2.setText("Result: " + res[1]);
+//            text3.setText("Result: " + res[2]);
+//            text4.setText("Result: " + res[3]);
+//        });
+//    }
+
+    private static String addKanamoji() {
+        Random r = new Random();
+        int n = r.nextInt(43);
+
+        String str = "あいうえお" +
+                "かきくけこ" +
+                "さしすせそ" +
+                "たちつてと" +
+                "なにぬねの" +
+                "はひふへほ" +
+                "まみむめも" +
+                "やゆよ" +
+                "らりるれろ" +
+                "わ";
+
+        return str.substring(n + 1, n + 2);
     }
 
     // 音声認識を開始する
@@ -301,7 +393,7 @@ public class ImageActivity extends AppCompatActivity {
             }
 //            Toast.makeText(getApplicationContext(), reason, Toast.LENGTH_SHORT).show();
             toast(reason);
-            restartListeningService();
+            // restartListeningService();
         }
 
         // 将来の使用のために予約されている
@@ -327,7 +419,7 @@ public class ImageActivity extends AppCompatActivity {
             String resultsString = "";
 
             resultsString += results_array.get(0);
-            saveFile(fileName,resultsString);
+            saveFile(fileName, resultsString);
             // トーストを使って結果表示
             buffer = readFile(fileName);
             toast(buffer);
