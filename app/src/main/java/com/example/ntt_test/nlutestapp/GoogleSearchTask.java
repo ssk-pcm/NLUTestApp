@@ -8,8 +8,11 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.util.Log;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+
 import org.json.JSONException;
-import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -17,27 +20,40 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
 
 import javax.net.ssl.HttpsURLConnection;
 
-public class GoogleSearchTask extends AsyncTask<Void, Void, JSONObject> {
+public class GoogleSearchTask extends AsyncTask<String , Void, ArrayList<String>> {
 
-    private final String key = MainActivity.getContext().getResources().getString(R.string.google_custom_search_api_key);
-    private final String cx = MainActivity.getContext().getResources().getString(R.string.google_api_cx);
-    private final String image_cx = MainActivity.getContext().getResources().getString(R.string.google_image_cx);
-    private final String qry = "Android";
-    private final String ENDPOINT = "https://www.googleapis.com/customsearch/v1?key=" + key + "&cx="+ cx +"&q=" + qry + "&alt=json";
+    private String key;
+    private String cx;
+    private String image_cx;
+    private String qry = "";
+    private String ENDPOINT;
+    private ArrayList<String> imageUrl;
+    private SearchTaskCallBack callBack;
 
-    GoogleSearchTask(String email, String password) {
 
+    GoogleSearchTask(SearchTaskCallBack callBack, Context context) {
+        this.callBack = callBack;
+
+        key = context.getResources().getString(R.string.google_custom_search_api_key);
+        cx = context.getResources().getString(R.string.google_image_cx);
+        image_cx = context.getResources().getString(R.string.google_image_cx);
+
+        imageUrl = new ArrayList<String>();
     }
 
     @Override
-    protected JSONObject doInBackground(Void... params) {
+    protected ArrayList<String> doInBackground(String... params) {
+        qry = params[0];
+        ENDPOINT = "https://www.googleapis.com/customsearch/v1?key=" + key + "&cx=" + image_cx + "&num=6" + "&q=" + qry + "&searchType=image" + "&alt=json";
+
         // TODO: attempt authentication against a network service.
         HttpURLConnection httpCon = null;
-        StringBuffer sb = new StringBuffer();
-        JSONObject jsonObject = null;
+        StringBuilder sb = new StringBuilder();
+        JsonObject jsonObject = null;
 
         try {
             // URL設定
@@ -59,18 +75,20 @@ public class GoogleSearchTask extends AsyncTask<Void, Void, JSONObject> {
             BufferedReader br = new BufferedReader(new InputStreamReader(
                     (httpCon.getInputStream())));
 
-            httpCon.disconnect();
+
             String responseData;
-            responseData = br.toString();
-            Log.d("responseData: ", responseData);
+            while ((responseData = br.readLine()) != null) {
+                sb.append(responseData).append("\n");
+            }
+            br.close();
+            httpCon.disconnect();
+            Log.d("responseData: ", sb.toString());
+            String JsonFormatString = sb.toString().replaceAll("\\\\", "");
 
-            jsonObject = new JSONObject(responseData);
+            JsonParser parser = new JsonParser();
+            jsonObject = parser.parse(JsonFormatString).getAsJsonObject();
 
-        } catch (MalformedURLException e) {
-            e.printStackTrace();
         } catch (IOException e) {
-            e.printStackTrace();
-        } catch (JSONException e) {
             e.printStackTrace();
         } finally {
             if (httpCon != null) {
@@ -79,14 +97,29 @@ public class GoogleSearchTask extends AsyncTask<Void, Void, JSONObject> {
         }
 
         // return response JSON object
-        Log.d("jsonObject: ", "" + jsonObject);
+        assert jsonObject != null;
+        Log.d("GoogleSearchResult ", ""+jsonObject);
 
-        return jsonObject;
+        try {
+            int ll = jsonObject.getAsJsonArray("items").size();
+            for (int i = 0; i < ll; i++) {
+                String thumbnaillink = jsonObject.getAsJsonArray("items").get(i).getAsJsonObject().get("image").getAsJsonObject().get("thumbnailLink").toString();
+                Log.d("thumbnail ", thumbnaillink);
+
+                thumbnaillink = thumbnaillink.replaceAll("\"", "");
+                imageUrl.add(thumbnaillink);
+            }
+
+        } catch (Exception ignored) {
+
+        }
+
+        return imageUrl;
     }
 
     @Override
-    protected void onPostExecute(final JSONObject jsonObject) {
-
+    protected void onPostExecute(final ArrayList<String> imageUrl) {
+        this.callBack.onImageSearchCompleted(imageUrl);
     }
 
     @Override

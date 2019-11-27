@@ -2,6 +2,7 @@ package com.example.ntt_test.nlutestapp;
 
 import android.content.Context;
 import android.content.Intent;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
 import android.speech.RecognitionListener;
@@ -19,11 +20,18 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.nio.charset.StandardCharsets;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Locale;
 import java.util.Random;
 
@@ -39,18 +47,20 @@ public class ImageActivity extends AppCompatActivity {
     //private String search;
     private GridView mGridView;
     private Button nextbtn;
-    private TextView wordtext,cv;
+    private TextView wordtext, cv;
     private int count = 0;
     private ArrayList<String> list = new ArrayList<>();
     private static final int REQUEST_CODE = 1000;
     private static Toast t;
     private SpeechRecognizer sr;
     private String input;
-    private Intent getDataIntent, restartIntent;
+    private Intent restartIntent;
     private Boolean restartFlag = false;
     private Boolean isSuggest = false;
-    private String fileName, buffer;
+    private String fileName;
+    private String timeLog, csvFileName;
     private String[] res = {"", "", "", ""};
+    private int listeningTimes;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -59,13 +69,17 @@ public class ImageActivity extends AppCompatActivity {
         mGridView = (GridView) findViewById(R.id.gridView);
         nextbtn = (Button) findViewById(R.id.nextbtn);
         wordtext = (TextView) findViewById(R.id.wordtext);
-        cv = (TextView)findViewById(R.id.countview);
-        getDataIntent = getIntent();
-        restartIntent = new Intent(ImageActivity.this,ImageActivity.class);
-        fileName = getDataIntent.getStringExtra("fileName");
+        cv = (TextView) findViewById(R.id.countview);
+        Intent getDataIntent = getIntent();
+        restartIntent = new Intent(ImageActivity.this, ImageActivity.class);
+        timeLog = getDataIntent.getStringExtra("timeLog");
+        fileName = timeLog + ".txt";
+        csvFileName = getDataIntent.getStringExtra("csvFileName");
+        isSuggest = getDataIntent.getBooleanExtra("isSuggest", false);
 
         list.addAll(getDataIntent.getStringArrayListExtra("listword"));
 //        search = intent.getStringExtra("word");
+        restartIntent.putExtra("isSuggest", isSuggest);
     }
 
     @Override
@@ -73,7 +87,9 @@ public class ImageActivity extends AppCompatActivity {
         super.onResume();
         // 画像検索開始
         imageSearch(0);
+
         // 同時に認識開始
+        listeningTimes = 0;
         startListening();
 
         nextbtn.setOnClickListener(new View.OnClickListener() {
@@ -81,6 +97,11 @@ public class ImageActivity extends AppCompatActivity {
             public void onClick(View view) {
                 // 画像検索開始
 //                imageSearch(count);
+                MediaScanner ms = new MediaScanner(csvFileName, ImageActivity.this);
+                ms.mediaScan();
+                MediaScanner ms2 = new MediaScanner(fileName, ImageActivity.this);
+                ms2.mediaScan();
+                finish();
             }
         });
 
@@ -91,11 +112,19 @@ public class ImageActivity extends AppCompatActivity {
     }
 
     @Override
+    protected void onPause() {
+        super.onPause();
+        stopListening();
+
+        finish();
+    }
+
+    @Override
     protected void onDestroy() {
         super.onDestroy();
         if (restartFlag) {
             restartFlag = false;
-          //  restartIntent.setClass(ImageActivity, ImageActivity.getClass());
+            //  restartIntent.setClass(ImageActivity, ImageActivity.getClass());
             startActivity(restartIntent);
         } else deleteFile(fileName);
     }
@@ -106,14 +135,15 @@ public class ImageActivity extends AppCompatActivity {
             @Override
             public void run() {
                 imageSearch(times);
+                listeningTimes = 0;
                 startListening();
             }
-        }, 10000 * (times));
+        }, 20000 * (times));
     }
 
     private void imageSearch(int num) {
         if (list.size() > num) {
-            ImageSearchTask test = new ImageSearchTask(new WebSearchTaskCallBack() {
+            ImageSearchTask test = new ImageSearchTask(new SearchTaskCallBack() {
                 @Override
                 public void onWebSearchCompleted(String result) {
                 }
@@ -122,127 +152,163 @@ public class ImageActivity extends AppCompatActivity {
                 public void onImageSearchCompleted(ArrayList<String> result) {
                     wordtext.setText(list.get(num));
                     cv.setText(String.valueOf(num));
-                    for (int i = 0; i < result.size(); i++) {
-                        System.out.println(result.get(i));
-                        BitmapAdapter adapter = new BitmapAdapter(
-                                getApplicationContext(),
-                                result
-                        );
-                        mGridView.setAdapter(adapter);
-                    }
+                    logWord(list.get(num), csvFileName);
+
+                    setImageBitmap(result);
+
                     if (num + 1 == list.size()) {
                         new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
                             @Override
                             public void run() {
                                 // Listの最後に実行される
-                                NLUCallTask nluTask = new NLUCallTask();
-                                nluTask.setOnNLUCallBack(new NLUCallTask.NLUCallBackTask() {
-                                    @Override
-                                    public void NLUCallBack(JsonObject result) {
-                                        super.NLUCallBack(result);
-                                        try{
-                                            for (int i = 0; i < 4; i++) {
-                                                if (i < result.getAsJsonArray("concepts").size()) {
-                                                    res[i] = result.getAsJsonArray("concepts").get(i).getAsJsonObject().get("text").getAsString();
-                                                } else {
-                                                    res[i] = "";
-                                                }
-                                            }
-                                        }catch(JsonParseException e){
-                                            nluTask.execute(readFile(fileName));
-                                        }
-                                        ArrayList<String> listWord = new ArrayList<>();
-                                        if (!res[0].isEmpty()) {
-                                            for (int i = 0; i < 4; i++) {
-                                                if (!res[i].isEmpty()) listWord.add(res[i]);
-                                            }
-                                            restartIntent.putStringArrayListExtra("listword", listWord);
-                                            // ファイルネームの保存
-                                            restartIntent.putExtra("fileName", fileName);
-                                            restartFlag = true;
-                                        } else toast("検索ワードがありません");
-
-                                        finish();
-                                    }
-                                });
-                                nluTask.execute(readFile(fileName));
+                                getNLUResult();
                             }
-                        }, 10000);
+                        }, 20000);
                     }
+
                 }
-            });
+            }, this);
             test.execute(list.get(num));
         }
     }
 
-//    private void addSuggest() {
-//        final AutosuggestTask suggest = new AutosuggestTask();
-//        suggest.setOnAutosuggestCallBack(new AutosuggestTask.AutosuggestCallBackTask() {
-//
-//            @Override
-//            public void AutosuggestCallBack(final String[] result) {
-//                super.AutosuggestCallBack(result);
-//
-//                for (int i = 0; i < 4; i++) {
-//                    if (result[i] != null) {
-//                        res[i] = result[i];
-//                    }
-//                    System.out.println("res" + i + " is ：" + res[i]);
-//                }
-//
-//                final Handler handler = new Handler();
-//                // Handlerを使用してメイン(UI)スレッドに処理を依頼する
-//                handler.post(() -> {
-//                    text1.setText("Result: " + res[0]);
-//                    text2.setText("Result: " + res[1]);
-//                    text3.setText("Result: " + res[2]);
-//                    text4.setText("Result: " + res[3]);
-//
-//                    nextIntent();
-//                });
-//
-//            }
-//        });
-//
-//        suggest.execute(
-//                res[0] + " " + addKanamoji(),
-//                res[1] + " " + addKanamoji(),
-//                res[2] + " " + addKanamoji(),
-//                res[3] + " " + addKanamoji()
-////                res[0] + " " + addEnglishLetter(),
-////                res[1] + " " + addEnglishLetter(),
-////                res[2] + " " + addEnglishLetter(),
-////                res[3] + " " + addEnglishLetter()
-//        );
-//    }
-//
-//    private void noSuggest() {
-//        final Handler mhandler = new Handler(Looper.getMainLooper());
-//        // Handlerを使用してメイン(UI)スレッドに処理を依頼する
-//        mhandler.post(() -> {
-//            text1.setText("Result: " + res[0]);
-//            text2.setText("Result: " + res[1]);
-//            text3.setText("Result: " + res[2]);
-//            text4.setText("Result: " + res[3]);
-//        });
-//    }
+    private void setImageBitmap(ArrayList<String> result) {
+        for (int i = 0; i < result.size(); i++) {
+//            System.out.println(result.get(i));
+            BitmapAdapter adapter = new BitmapAdapter(
+                    getApplicationContext(),
+                    result
+            );
+            mGridView.setAdapter(adapter);
+        }
+    }
+    private void getNLUResult() {
+        // Listの最後に実行される
+        NLUCallTask nluTask = new NLUCallTask(this, Constants.ANALYZE_FORMAT.TEXT);
+        nluTask.setOnNLUCallBack(new NLUCallTask.NLUCallBackTask() {
+            @Override
+            public void NLUCallBack(JsonObject result) {
+                super.NLUCallBack(result);
+                try {
+                    for (int i = 0; i < 4; i++) {
+                        if (i < result.getAsJsonArray("concepts").size()) {
+                            res[i] = result.getAsJsonArray("concepts").get(i).getAsJsonObject().get("text").getAsString();
+                        } else {
+                            res[i] = "";
+                        }
+                    }
+                } catch (JsonParseException | NullPointerException e) {
+//                    nluTask.execute(readFile(fileName));
+
+                }
+
+                // Suggestを入れるか
+                if (isSuggest) {
+                    addSuggest(res);
+                } else {
+                    noSuggest();
+                }
+            }
+        });
+        nluTask.execute(readFile(fileName));
+    }
+
+    private void addSuggest(String[] word) {
+        final AutosuggestTask suggest = new AutosuggestTask(this);
+        suggest.setOnAutosuggestCallBack(new AutosuggestTask.AutosuggestCallBackTask() {
+
+            @Override
+            public void AutosuggestCallBack(final String[] result) {
+                super.AutosuggestCallBack(result);
+
+                for (int i = 0; i < 4; i++) {
+                    if (result[i] != null) {
+                        // オートサジェスト付与済みワード
+                        res[i] = result[i];
+                    }
+                }
+                restartIntent();
+            }
+        });
+
+        suggest.execute(
+                word[0] + " " + addKanamoji(),
+                word[1] + " " + addKanamoji(),
+                word[2] + " " + addKanamoji(),
+                word[3] + " " + addKanamoji()
+//                res[0] + " " + addEnglishLetter(),
+//                res[1] + " " + addEnglishLetter(),
+//                res[2] + " " + addEnglishLetter(),
+//                res[3] + " " + addEnglishLetter()
+        );
+    }
+
+    private void noSuggest() {
+        restartIntent();
+    }
+
+    private void restartIntent() {
+        ArrayList<String> listWord = new ArrayList<>();
+        if (!res[0].isEmpty()) {
+            for (int i = 0; i < 4; i++) {
+                if (!res[i].isEmpty()) listWord.add(res[i]);
+            }
+            restartIntent.putStringArrayListExtra("listword", listWord);
+            // ファイルネームの保存
+            restartIntent.putExtra("timeLog", timeLog);
+            restartIntent.putExtra("csvFileName", csvFileName);
+            restartFlag = true;
+        } else toast("ImageActivity:検索ワードがありません");
+
+        finish();
+    }
+
+    private void logWord(String word, String csvFileName) {
+        String filePath = Environment.getExternalStorageDirectory().getPath()
+                + "/NLUTestApp/" + csvFileName;
+        //Log.d("debug", filePath);
+
+        File file = new File(filePath);
+        FileOutputStream fileOutputStream;
+        try {
+            fileOutputStream = new FileOutputStream(file, true);
+            OutputStreamWriter outputStreamWriter
+                    = new OutputStreamWriter(fileOutputStream, "Shift_JIS");
+            BufferedWriter bw = new BufferedWriter(outputStreamWriter);
+            //csvに書き込む
+            bw.append(word).append(",").append(getNowDate()).append("\n");
+            bw.flush();
+            bw.close();
+//            toast("保存に成功しました");
+        } catch (Exception e) {
+            toast("保存に失敗しました");
+            e.printStackTrace();
+        }
+    }
 
     private static String addKanamoji() {
         Random r = new Random();
         int n = r.nextInt(43);
 
-        String str = "あいうえお" +
-                "かきくけこ" +
-                "さしすせそ" +
-                "たちつてと" +
-                "なにぬねの" +
-                "はひふへほ" +
-                "まみむめも" +
-                "やゆよ" +
-                "らりるれろ" +
-                "わ";
+        String str =
+                "あいうえお" +
+                        "かきくけこ" +
+                        "さしすせそ" +
+                        "たちつてと" +
+                        "なにぬねの" +
+                        "はひふへほ" +
+                        "まみむめも" +
+                        "やゆよ" +
+                        "らりるれろ" +
+                        "わ";
 
         return str.substring(n + 1, n + 2);
+    }
+
+    private static String getNowDate() {
+        final DateFormat df = new SimpleDateFormat("HH:mm:ss", Locale.JAPANESE);
+        final Date date = new Date(System.currentTimeMillis());
+        return df.format(date);
     }
 
     // 音声認識を開始する
@@ -288,9 +354,10 @@ public class ImageActivity extends AppCompatActivity {
     public void saveFile(String file, String str) {
 
         // try-with-resources
-        try (FileOutputStream fileOutputstream = openFileOutput(file,
-                Context.MODE_APPEND)) {
-
+        try{
+            FileOutputStream fileOutputstream = new FileOutputStream(new File(
+                    Environment.getExternalStorageDirectory().getPath()
+                            + "/NLUTestApp/" + file),true);
             fileOutputstream.write(str.getBytes());
 
         } catch (IOException e) {
@@ -303,9 +370,12 @@ public class ImageActivity extends AppCompatActivity {
         String text = null;
 
         // try-with-resources
-        try (FileInputStream fileInputStream = openFileInput(file);
-             BufferedReader reader = new BufferedReader(
-                     new InputStreamReader(fileInputStream, "UTF-8"))) {
+        try {
+            FileInputStream fileInputStream = new FileInputStream(new File(
+                    Environment.getExternalStorageDirectory().getPath()
+                            + "/NLUTestApp/" + file));
+            BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(fileInputStream, StandardCharsets.UTF_8));
 
             String lineBuffer;
             while ((lineBuffer = reader.readLine()) != null) {
@@ -393,7 +463,8 @@ public class ImageActivity extends AppCompatActivity {
             }
 //            Toast.makeText(getApplicationContext(), reason, Toast.LENGTH_SHORT).show();
             toast(reason);
-            // restartListeningService();
+            if(listeningTimes < 3)restartListeningService();
+            listeningTimes++;
         }
 
         // 将来の使用のために予約されている
@@ -421,7 +492,7 @@ public class ImageActivity extends AppCompatActivity {
             resultsString += results_array.get(0);
             saveFile(fileName, resultsString);
             // トーストを使って結果表示
-            buffer = readFile(fileName);
+            String buffer = readFile(fileName);
             toast(buffer);
         }
 

@@ -5,8 +5,10 @@ import java.net.*;
 
 import javax.net.ssl.HttpsURLConnection;
 
+import android.content.Context;
 import android.os.AsyncTask;
 import android.os.Handler;
+import android.util.Log;
 
 /*
  * Gson: https://github.com/google/gson
@@ -34,18 +36,23 @@ import org.xmlpull.v1.XmlPullParserFactory;
 
 
 public class AutosuggestTask extends AsyncTask<String, Void, String[]> {
-    static String subscriptionKey = MainActivity.getContext().getResources().getString(R.string.suggest_key2);
+    static String subscriptionKey ;
 
-//    static String host = "https://api.cognitive.microsoft.com";
-//    static String path = "/bing/v7.0/Suggestions";
-    static String host = "https://www.google.com";
-    static String path = "/complete/search";
+    static String host = "https://api.cognitive.microsoft.com";
+//    static String host = "https://autosuggest002.cognitiveservices.azure.com";
+    static String path = "/bing/v7.0/suggestions";
+//    static String host = "https://www.google.com";
+//    static String path = "/complete/search";
 
-    static String mkt = "ja";
+    static String mkt = "ja-JP";
 //    static String mkt = "en-US";
     static String query = " ";
 
     private AutosuggestCallBackTask callbacktask;
+
+    AutosuggestTask(Context context){
+        subscriptionKey = context.getResources().getString(R.string.suggest_key1);
+    }
 
     @Override
     protected String[] doInBackground(String... params) {
@@ -54,8 +61,8 @@ public class AutosuggestTask extends AsyncTask<String, Void, String[]> {
         for(int i = 0;i < 4;i++){
             try {
                 String response = get_suggestions(params[i]);
-                System.out.println(prettify(response));
-//                Thread.sleep(1000); //1000ミリ秒Sleepする
+                Log.d("AutoSuggestTask : ",prettify(response));
+                Thread.sleep(1000); //1000ミリ秒Sleepする
 
                 JsonParser parser = new JsonParser();
                 JsonObject jo = parser.parse(response).getAsJsonObject();
@@ -63,9 +70,9 @@ public class AutosuggestTask extends AsyncTask<String, Void, String[]> {
                 JsonArray searchSuggestions = suggestionGroups.getAsJsonArray("searchSuggestions");
                 JsonObject query = searchSuggestions.get(0).getAsJsonObject();
                 suggestWord[i] = query.get("query").toString();
-                System.out.println("サジェスト結果は"+suggestWord[i]);
+                Log.d("AutoSuggest Result: ", suggestWord[i]);
             } catch (Exception e) {
-                System.out.println("Suggest Error : "+e);
+                Log.e("AutoSuggest Error : ",e.toString());
             }
         }
         return suggestWord;
@@ -91,7 +98,8 @@ public class AutosuggestTask extends AsyncTask<String, Void, String[]> {
 
     public static String get_suggestions(String query) throws Exception {
         String encoded_query = URLEncoder.encode(query, "UTF-8");
-        String params = "?hl=" + mkt + "&output=toolbar&q=" + encoded_query;
+//        String params = "?hl=" + mkt + "&output=toolbar&q=" + encoded_query;
+        String params = "?mkt=" + mkt + "&q=" + encoded_query;
         URL url = new URL(host + path + params);
 
         HttpsURLConnection connection = (HttpsURLConnection) url.openConnection();
@@ -129,7 +137,7 @@ public class AutosuggestTask extends AsyncTask<String, Void, String[]> {
             if (eventType == XmlPullParser.START_TAG) {
                 if (parser.getName().equals("suggestion")) {
                     String keyword = parser.getAttributeValue(null, "data");
-                    System.out.println(keyword);
+                    Log.d("parseXml : ",keyword);
                 }
             }
 

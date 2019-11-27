@@ -3,7 +3,8 @@ package com.example.ntt_test.nlutestapp;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
+import android.media.MediaScannerConnection;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
 import android.speech.RecognitionListener;
@@ -11,12 +12,14 @@ import android.speech.RecognizerIntent;
 import android.speech.SpeechRecognizer;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
 import com.google.gson.JsonParser;
 import com.ibm.watson.natural_language_understanding.v1.NaturalLanguageUnderstanding;
 import com.ibm.watson.natural_language_understanding.v1.model.AnalysisResults;
@@ -27,10 +30,14 @@ import com.ibm.watson.natural_language_understanding.v1.model.Features;
 
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.nio.charset.StandardCharsets;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -48,25 +55,20 @@ public class MainActivity extends AppCompatActivity {
     private String input;
     private String res1, res2, res3, res4 = null;
     private String[] res = {"", "", "", ""};
-    private int lang;
     private Boolean en = false;
     private static Toast t;
     private SpeechRecognizer sr;
-    private String fileName;
-    private Intent mIntent;
+    private String textFileName, timeLog, csvFileName;
     private Intent mNextIntent;
     private Boolean listenFlag = true;
-
-    private static Context mContext;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 //        mContext = this;
-        mContext = getApplicationContext();
-        nlu_username = mContext.getString(R.string.nlu_username);
-        nlu_password = mContext.getString(R.string.nlu_password);
+        nlu_username = this.getString(R.string.nlu_username);
+        nlu_password = this.getString(R.string.nlu_password);
 
         text1 = findViewById(R.id.result1);
         text2 = findViewById(R.id.result2);
@@ -74,16 +76,16 @@ public class MainActivity extends AppCompatActivity {
         text4 = findViewById(R.id.result4);
         Button buttonStart = findViewById(R.id.button_start);
         Button next = findViewById(R.id.button);
-        Button wsbtn1 = findViewById(R.id.wsbtn1);
-        Button wsbtn2 = findViewById(R.id.wsbtn2);
-        Button wsbtn3 = findViewById(R.id.wsbtn3);
-        Button wsbtn4 = findViewById(R.id.wsbtn4);
-        mIntent = getIntent();
+        Intent mIntent = getIntent();
         mNextIntent = new Intent(MainActivity.this, ImageActivity.class);
-        fileName = getNowDate() + ".txt";
+        timeLog = mIntent.getStringExtra("timeLog");
+        textFileName = timeLog + ".txt";
+//        String csvFileName = timeLog + ".csv";
+        csvFileName = mIntent.getStringExtra("csvFileName");
+//        saveCsvFile(csvFileName);
 
         // 言語選択 0:日本語、1:英語、2:オフライン、その他:General
-        lang = 0;
+        int lang = 0;
 
         // Autosuggestを使うかの判定を受け取る
         en = mIntent.getBooleanExtra("isSuggest", false);
@@ -108,74 +110,7 @@ public class MainActivity extends AppCompatActivity {
                     }
                     intent.putStringArrayListExtra("listword", listWord);
                     startActivity(intent);
-                } else toast("検索ワードがありません");
-            }
-        });
-
-        wsbtn1.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                input = "太陽光";
-                // 検索
-                webSearch(input);
-            }
-        });
-        wsbtn2.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                input = "エヴァンゲリオン";
-                if (en) {
-                    //英語に翻訳する
-                    TranslateTask translate = new TranslateTask();
-                    translate.setOnTranslateCallBack(new TranslateTask.TranslateCallBackTask() {
-
-                        @Override
-                        public void TranslateCallBack(String result) {
-                            super.TranslateCallBack(result);
-
-                            // 検索
-                            webSearch(result);
-                        }
-                    });
-
-                    //翻訳を実行
-                    translate.execute(input);
-                } else {
-                    // 日本語のまま検索する
-                    webSearch(input);
-                }
-            }
-        });
-        wsbtn3.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                input = res1 + " " + res3;
-                if (en) {// 英語に翻訳して検索する
-                    //英語に翻訳する
-                    TranslateTask translate = new TranslateTask();
-                    translate.setOnTranslateCallBack(new TranslateTask.TranslateCallBackTask() {
-
-                        @Override
-                        public void TranslateCallBack(String result) {
-                            super.TranslateCallBack(result);
-
-                            // 検索
-                            webSearch(result);
-                        }
-                    });
-
-                    //翻訳を実行
-                    translate.execute(input);
-                } else {// 日本語のまま検索する
-                    // 検索
-                    webSearch(input);
-                }
-            }
-        });
-        wsbtn4.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-
+                } else toast("MainActivity:検索ワードがありません");
             }
         });
 
@@ -186,9 +121,10 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 stopListening();
+                MediaScanner ms = new MediaScanner(csvFileName, MainActivity.this);
+                ms.mediaScan();
             }
         });
-
     }
 
     @Override
@@ -201,62 +137,40 @@ public class MainActivity extends AppCompatActivity {
     protected void onPause() {
         super.onPause();
         stopListening();
+        listenFlag = false;
     }
 
-    protected JsonObject callNLU(String inputtext) {
+    protected void callNLU(String inputText) {
+        NLUCallTask task = new NLUCallTask(this,Constants.ANALYZE_FORMAT.URL);
+        task.setOnNLUCallBack(new NLUCallTask.NLUCallBackTask() {
+            @Override
+            public void NLUCallBack(JsonObject result) {
+                super.NLUCallBack(result);
 
-        try{
+                try {
+                    for (int i = 0; i < 4; i++) {
+                        if (i < result.getAsJsonArray("concepts").size()) {
+                            res[i] = result.getAsJsonArray("concepts").get(i).getAsJsonObject().get("text").getAsString();
+                        } else {
+                            res[i] = "";
+                        }
+                    }
+                } catch (JsonParseException | NullPointerException e) {
+//                    nluTask.execute(readFile(fileName));
+                }
 
-        }catch(RuntimeException e){
-
-        }
-        NaturalLanguageUnderstanding service = new NaturalLanguageUnderstanding(
-                "2019-07-12",
-                nlu_username,
-                nlu_password
-        );
-
-        //URLを読み込み
-        String text = inputtext;
-        System.out.println(text);
-
-        CategoriesOptions categories = new CategoriesOptions.Builder()
-                .build();
-
-        ConceptsOptions concepts = new ConceptsOptions.Builder()
-                .limit(4)
-                .build();
-
-        Features features = new Features.Builder()
-                .categories(categories)
-                .concepts(concepts)
-                .build();
-
-        AnalyzeOptions parameters = new AnalyzeOptions.Builder()
-                .url(text)
-                .features(features)
-                .build();
-
-        AnalysisResults response = service
-                .analyze(parameters)
-                .execute()
-                .getResult();
-        System.out.println(response); //Object形式で帰ってくる
-
-
-        JsonParser parser = new JsonParser();
-        JsonObject result = parser.parse(response.toString()).getAsJsonObject();
-        System.out.println(result);
-//                JSONObject json = new JSONObject();
-        // NLUの結果を抽出
-        for (int i = 0; i < 4; i++) {
-            if (i < result.getAsJsonArray("concepts").size()) {
-                res[i] = result.getAsJsonArray("concepts").get(i).getAsJsonObject().get("text").getAsString();
-            } else {
-                res[i] = "";
+                // AutosuggestをONにする
+                if (en) {
+                    // 抽出結果をAutosuggestにかける
+                    addSuggest();
+                } else {
+                    noSuggest();
+                }
             }
-        }
-        return result;
+        });
+        task.execute(inputText);
+
+
     }
 
     @Override
@@ -264,36 +178,13 @@ public class MainActivity extends AppCompatActivity {
         super.onDestroy();
     }
 
-    private void speech() {
-        // 音声認識の　Intent インスタンス
-        Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
-
-        if (lang == 0) {
-            // 日本語
-            intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.JAPAN.toString());
-        } else if (lang == 1) {
-            // 英語
-            intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.ENGLISH.toString());
-        } else if (lang == 2) {
-            // Off line mode
-            intent.putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true);
-        } else {
-            intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,
-                    RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+    // Checks if external storage is available for read and write
+    public boolean isExternalStorageWritable() {
+        String state = Environment.getExternalStorageState();
+        if (Environment.MEDIA_MOUNTED.equals(state)) {
+            return true;
         }
-
-        intent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 100);
-        intent.putExtra(RecognizerIntent.EXTRA_PROMPT, "音声を入力");
-        intent.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true);
-        SpeechRecognizer recognizer = SpeechRecognizer.createSpeechRecognizer(this);
-
-        try {
-            // インテント発行
-            startActivityForResult(intent, REQUEST_CODE);
-        } catch (ActivityNotFoundException e) {
-            e.printStackTrace();
-            text1.setText("error");
-        }
+        return false;
     }
 
     // 音声認識を開始する
@@ -312,6 +203,7 @@ public class MainActivity extends AppCompatActivity {
             Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
             // 言語モデル指定
             intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.JAPANESE.toString());
+//            intent.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true);
 //            intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,
 //                    RecognizerIntent.LANGUAGE_MODEL_WEB_SEARCH);
             sr.startListening(intent);
@@ -337,33 +229,28 @@ public class MainActivity extends AppCompatActivity {
 
     private void webSearch(String word) {
 
-        WebSearchTask webSearchTask = new WebSearchTask(new WebSearchTaskCallBack() {
+        WebSearchTask webSearchTask = new WebSearchTask(new SearchTaskCallBack() {
             @Override
             public void onWebSearchCompleted(final String result) {
 
                 //NLUサービスにメッセージを送信する
-                Thread thread = new Thread(new Runnable() {
-                    public void run() {
-                        // NLUサービスを呼び出す
-                        JsonObject nluResult = callNLU(result);
+//                Thread thread = new Thread(new Runnable() {
+//                    public void run() {
+                // NLUサービスを呼び出す
+                // TODO: NLUの呼び出しをAsyncTaskに切り替える
+                callNLU(result);
 
-                        // AutosuggestをONにする
-                        if (en) {
-                            // 抽出結果をAutosuggestにかける
-                            addSuggest();
-                        } else {
-                            noSuggest();
-                        }
-                    }
-                });
-                thread.start();
+
+//                    }
+//                });
+//                thread.start();
             }
 
             @Override
             public void onImageSearchCompleted(ArrayList<String> e) {
 
             }
-        });
+        }, this);
         webSearchTask.execute("filetype:html " + word);
     }
 
@@ -374,14 +261,15 @@ public class MainActivity extends AppCompatActivity {
                 if (!res[i].isEmpty()) listWord.add(res[i]);
             }
             mNextIntent.putStringArrayListExtra("listword", listWord);
-            mNextIntent.putExtra("isSuggest",en);
+            mNextIntent.putExtra("isSuggest", en);
+            mNextIntent.putExtra("csvFileName", csvFileName);
             listenFlag = false;
             startActivity(mNextIntent);
-        } else toast("検索ワードがありません");
+        } else toast("nextIntent:検索ワードがありません");
     }
 
     private void addSuggest() {
-        final AutosuggestTask suggest = new AutosuggestTask();
+        final AutosuggestTask suggest = new AutosuggestTask(this);
         suggest.setOnAutosuggestCallBack(new AutosuggestTask.AutosuggestCallBackTask() {
 
             @Override
@@ -392,7 +280,7 @@ public class MainActivity extends AppCompatActivity {
                     if (result[i] != null) {
                         res[i] = result[i];
                     }
-                    System.out.println("res" + i + " is ：" + res[i]);
+                    Log.d("AddSuggest : " + i , res[i]);
                 }
 
                 final Handler handler = new Handler();
@@ -465,20 +353,15 @@ public class MainActivity extends AppCompatActivity {
     public void saveFile(String file, String str) {
 
         // try-with-resources
-        try (FileOutputStream fileOutputstream = openFileOutput(file,
-                Context.MODE_PRIVATE);) {
-
+        try{
+            FileOutputStream fileOutputstream = new FileOutputStream(new File(
+                    Environment.getExternalStorageDirectory().getPath()
+                            + "/NLUTestApp/" + file));
             fileOutputstream.write(str.getBytes());
 
         } catch (IOException e) {
             e.printStackTrace();
         }
-    }
-
-    public static String getNowDate() {
-        final DateFormat df = new SimpleDateFormat("yyyyMMdd_HHmmss");
-        final Date date = new Date(System.currentTimeMillis());
-        return df.format(date);
     }
 
     // ファイルを読み出し
@@ -488,7 +371,7 @@ public class MainActivity extends AppCompatActivity {
         // try-with-resources
         try (FileInputStream fileInputStream = openFileInput(file);
              BufferedReader reader = new BufferedReader(
-                     new InputStreamReader(fileInputStream, "UTF-8"))) {
+                     new InputStreamReader(fileInputStream, StandardCharsets.UTF_8))) {
 
             String lineBuffer;
             while ((lineBuffer = reader.readLine()) != null) {
@@ -500,10 +383,6 @@ public class MainActivity extends AppCompatActivity {
         }
 
         return text;
-    }
-
-    public static Context getContext() {
-        return mContext;
     }
 
     //トーストが連続して表示されるのを防ぐ
@@ -590,6 +469,10 @@ public class MainActivity extends AppCompatActivity {
         // 部分的な認識結果が利用出来るときに呼ばれる
         // 利用するにはインテントでEXTRA_PARTIAL_RESULTSを指定する必要がある
         public void onPartialResults(Bundle partialResults) {
+
+            ArrayList results_array = partialResults.getStringArrayList(
+                    SpeechRecognizer.RESULTS_RECOGNITION);
+            toast(results_array.get(0).toString());
         }
 
         // 音声認識の準備ができた時に呼ばれる
@@ -610,11 +493,12 @@ public class MainActivity extends AppCompatActivity {
             resultsString += results_array.get(0);
 
             // ファイルネームの保存
-            mNextIntent.putExtra("fileName", fileName);
+            mNextIntent.putExtra("timeLog", timeLog);
             // 音声認識のtxt保存
-            saveFile(fileName, resultsString);
+            saveFile(textFileName, resultsString);
             // 結果表示
             text1.setText(resultsString);
+
             webSearch(resultsString);
         }
 

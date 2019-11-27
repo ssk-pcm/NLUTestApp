@@ -1,9 +1,11 @@
 package com.example.ntt_test.nlutestapp;
 
+import android.content.Context;
 import android.os.AsyncTask;
 
 import java.io.*;
 import java.net.*;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import javax.net.ssl.HttpsURLConnection;
 
@@ -24,16 +26,14 @@ import com.google.gson.JsonParser;
 public class TranslateTask extends AsyncTask<String,Void,String> {
 
     // Replace the subscriptionKey string value with your valid subscription key.
-    static String subscriptionKey = MainActivity.getContext().getResources().getString(R.string.translator_key1);
-
-    static String host = "https://api.cognitive.microsofttranslator.com";
-    static String path = "/translate?api-version=3.0";
-
-    // Translate to German and Italian.
-    static String params = "&to=en";
+    private static String subscriptionKey;
 
     //static String text = "Hello world!";
     private TranslateCallBackTask callbacktask;
+
+    TranslateTask(Context context){
+        subscriptionKey = context.getResources().getString(R.string.translator_key1);
+    }
 
     @Override
     protected String doInBackground(String... params) {
@@ -46,15 +46,15 @@ public class TranslateTask extends AsyncTask<String,Void,String> {
             System.out.println (e);
         }
         System.out.println(prettify(response));
+        assert response != null;
         response = response.replace("[","");
         response = response.replace("]","");
 
         JsonParser parser = new JsonParser();
         JsonObject jo = parser.parse(response).getAsJsonObject();
 
-        System.out.println("translate word : "+jo.getAsJsonObject("translations").get("text").toString());
-        String translateWord = jo.getAsJsonObject("translations").get("text").toString();
-        return translateWord;
+//        System.out.println("translate word : "+jo.getAsJsonObject("translations").get("text").toString());
+        return jo.getAsJsonObject("translations").get("text").toString(); // translate word
     }
 
 
@@ -65,7 +65,7 @@ public class TranslateTask extends AsyncTask<String,Void,String> {
     }
 
 
-    public void setOnTranslateCallBack(TranslateCallBackTask _cbj) {
+    void setOnTranslateCallBack(TranslateCallBackTask _cbj) {
         callbacktask = _cbj;
     }
 
@@ -78,7 +78,11 @@ public class TranslateTask extends AsyncTask<String,Void,String> {
         }
     }
 
-    public static String Translate (String text) throws Exception {
+    private static String Translate(String text) throws Exception {
+        String host = "https://api.cognitive.microsofttranslator.com";
+        String path = "/translate?api-version=3.0";
+        // Translate to German and Italian.
+        String params = "&to=en";
         URL url = new URL (host + path + params);
 
         List<RequestBody> objList = new ArrayList<RequestBody>();
@@ -88,7 +92,7 @@ public class TranslateTask extends AsyncTask<String,Void,String> {
         return Post(url, content);
     }
 
-    public static String prettify(String json_text) {
+    private static String prettify(String json_text) {
         JsonParser parser = new JsonParser();
         JsonElement json = parser.parse(json_text);
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
@@ -104,7 +108,7 @@ public class TranslateTask extends AsyncTask<String,Void,String> {
         }
     }
 
-    public static String Post (URL url, String content) throws Exception {
+    private static String Post(URL url, String content) throws Exception {
         HttpsURLConnection connection = (HttpsURLConnection) url.openConnection();
         connection.setRequestMethod("POST");
         connection.setRequestProperty("Content-Type", "application/json");
@@ -114,13 +118,13 @@ public class TranslateTask extends AsyncTask<String,Void,String> {
         connection.setDoOutput(true);
 
         DataOutputStream wr = new DataOutputStream(connection.getOutputStream());
-        byte[] encoded_content = content.getBytes("UTF-8");
+        byte[] encoded_content = content.getBytes(StandardCharsets.UTF_8);
         wr.write(encoded_content, 0, encoded_content.length);
         wr.flush();
         wr.close();
 
         StringBuilder response = new StringBuilder ();
-        BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream(), "UTF-8"));
+        BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8));
         String line;
         while ((line = in.readLine()) != null) {
             response.append(line);

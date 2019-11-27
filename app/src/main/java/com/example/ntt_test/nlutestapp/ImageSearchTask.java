@@ -1,20 +1,15 @@
 package com.example.ntt_test.nlutestapp;
 
+import android.content.Context;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.os.AsyncTask;
-import android.os.Handler;
 import android.util.Log;
-import android.widget.ImageView;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-import org.json.JSONObject;
-
-import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.net.URLEncoder;
@@ -40,19 +35,19 @@ public class ImageSearchTask extends AsyncTask<String, Void, Bitmap> {
     private Bitmap thumbnail = null;
     private ArrayList<String> imageUrl;
     //    static String searchTerm = "タイヤ";
-    private WebSearchTaskCallBack callBack;
+    private SearchTaskCallBack callBack;
 
     static JsonObject imageObject;
 
-    public ImageSearchTask(WebSearchTaskCallBack callBack) {
+    ImageSearchTask(SearchTaskCallBack callBack, Context context) {
      //   mImageView = imageView;
         this.callBack = callBack;
+        subscriptionKey = context.getResources().getString(R.string.azure_api_key1);
     }
 
     @Override
     protected void onPreExecute() {
         super.onPreExecute();
-        subscriptionKey = MainActivity.getContext().getResources().getString(R.string.azure_api_key1);
         imageUrl = new ArrayList<String>();
     }
 
@@ -68,7 +63,7 @@ public class ImageSearchTask extends AsyncTask<String, Void, Bitmap> {
                     addUrl = addUrl.replaceAll("\"", "");
                     imageUrl.add(addUrl);
                 }catch(NullPointerException e){
-                    System.out.println("");
+                    Log.e("ImageSearchTask",e.toString());
                 }
             }
         return thumbnail;
@@ -83,7 +78,7 @@ public class ImageSearchTask extends AsyncTask<String, Void, Bitmap> {
         this.callBack.onImageSearchCompleted(imageUrl);
     }
 
-    public static SearchResults SearchImages(String searchQuery) throws Exception {
+    private static SearchResults SearchImages(String searchQuery) throws Exception {
         // construct URL of search request (endpoint + query string)
         URL url = new URL(host + path + "?q=" + URLEncoder.encode(searchQuery, "UTF-8"));
         HttpsURLConnection connection = (HttpsURLConnection) url.openConnection();
@@ -117,7 +112,7 @@ public class ImageSearchTask extends AsyncTask<String, Void, Bitmap> {
     }
 
 
-    public static JsonObject imageGet(String searchTerm) {
+    private static JsonObject imageGet(String searchTerm) {
         JsonObject resultObject = new JsonObject();
 
         if (subscriptionKey.length() != 32) {

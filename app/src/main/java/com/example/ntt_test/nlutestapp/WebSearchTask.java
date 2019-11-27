@@ -1,7 +1,9 @@
 package com.example.ntt_test.nlutestapp;
 
+import android.content.Context;
 import android.graphics.Bitmap;
 import android.os.AsyncTask;
+import android.util.Log;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -32,30 +34,30 @@ public class WebSearchTask extends AsyncTask<String, Void, String> {
 
     private Bitmap thumbnail;
     //    static String searchTerm = "タイヤ";
-    private WebSearchTaskCallBack callBack;
+    private SearchTaskCallBack callBack;
 
-    static JsonObject resultObject;
+    private static JsonObject resultObject;
 
-    public WebSearchTask(WebSearchTaskCallBack callBack) {
+    WebSearchTask(SearchTaskCallBack callBack, Context context) {
         this.callBack = callBack;
-    }
-
-    @Override
-    protected void onPreExecute() {
-        super.onPreExecute();
-        subscriptionKey = MainActivity.getContext().getResources().getString(R.string.azure_api_key1);
+        subscriptionKey = context.getResources().getString(R.string.azure_api_key1);
     }
 
     // 非同期処理
     @Override
     protected String doInBackground(String... params) {
+        String hoge = "https://www.yahoo.co.jp/";
         //Web検索
         objectGet(params[0]);
-        System.out.println("WebSearchResult : " + resultObject.getAsJsonObject("webPages").getAsJsonArray("value").get(0).getAsJsonObject().get("url"));
+        try{
+            System.out.println("WebSearchResult : " + resultObject.getAsJsonObject("webPages").getAsJsonArray("value").get(0).getAsJsonObject().get("url"));
 
-        //URL取得
-        String hoge = resultObject.getAsJsonObject("webPages").getAsJsonArray("value").get(0).getAsJsonObject().get("url").toString();
-        hoge = hoge.replaceAll("\"", "");
+            //URL取得
+            hoge = resultObject.getAsJsonObject("webPages").getAsJsonArray("value").get(0).getAsJsonObject().get("url").toString();
+            hoge = hoge.replaceAll("\"", "");
+        }catch (Exception e){
+            Log.d("WebSearchTask Error :",""+e);
+        }
 
         return hoge;
     }
@@ -66,7 +68,7 @@ public class WebSearchTask extends AsyncTask<String, Void, String> {
         this.callBack.onWebSearchCompleted(result);
     }
 
-    public static SearchResults SearchItems(String searchQuery) throws Exception {
+    private static SearchResults SearchItems(String searchQuery) throws Exception {
         // construct URL of search request (endpoint + query string)
         URL url = new URL(host + path + "?q=" + URLEncoder.encode(searchQuery, "UTF-8"));
         HttpsURLConnection connection = (HttpsURLConnection) url.openConnection();
@@ -93,7 +95,7 @@ public class WebSearchTask extends AsyncTask<String, Void, String> {
     }
 
     // pretty-printer for JSON; uses GSON parser to parse and re-serialize
-    public static String prettify(String json_text) {
+    private static String prettify(String json_text) {
         JsonParser parser = new JsonParser();
         JsonObject json = parser.parse(json_text).getAsJsonObject();
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
@@ -101,7 +103,7 @@ public class WebSearchTask extends AsyncTask<String, Void, String> {
     }
 
 
-    public static void objectGet(String searchTerm) {
+    private static void objectGet(String searchTerm) {
         if (subscriptionKey.length() != 32) {
             System.out.println("Invalid Bing Search API subscription key!");
             System.out.println("Please paste yours into the source code.");
@@ -112,7 +114,7 @@ public class WebSearchTask extends AsyncTask<String, Void, String> {
         try {
             SearchResults result = SearchItems(searchTerm);
             // 結果をコンソールで表示
-            System.out.println(prettify(result.jsonResponse));
+            Log.d("WebSearchTask : ",prettify(result.jsonResponse));
 
             JsonParser parser = new JsonParser();
             resultObject = parser.parse(result.jsonResponse).getAsJsonObject();
