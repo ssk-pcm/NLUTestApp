@@ -1,6 +1,5 @@
 package com.example.ntt_test.nlutestapp;
 
-import android.content.Context;
 import android.content.Intent;
 import android.os.Environment;
 import android.os.Handler;
@@ -49,7 +48,8 @@ public class ImageActivity extends AppCompatActivity {
     private Button nextbtn;
     private TextView wordtext, cv;
     private int count = 0;
-    private ArrayList<String> list = new ArrayList<>();
+    private ArrayList<String> useWord = new ArrayList<>();
+    private ArrayList<String> sourceWord = new ArrayList<>();
     private static final int REQUEST_CODE = 1000;
     private static Toast t;
     private SpeechRecognizer sr;
@@ -77,7 +77,8 @@ public class ImageActivity extends AppCompatActivity {
         csvFileName = getDataIntent.getStringExtra("csvFileName");
         isSuggest = getDataIntent.getBooleanExtra("isSuggest", false);
 
-        list.addAll(getDataIntent.getStringArrayListExtra("listword"));
+        useWord.addAll(getDataIntent.getStringArrayListExtra("listword"));
+        sourceWord.addAll(getDataIntent.getStringArrayListExtra("sourceWord"));
 //        search = intent.getStringExtra("word");
         restartIntent.putExtra("isSuggest", isSuggest);
     }
@@ -106,7 +107,7 @@ public class ImageActivity extends AppCompatActivity {
         });
 
         // 自動遷移
-        for (int i = 1; i < list.size(); i++) {
+        for (int i = 1; i < useWord.size(); i++) {
             delayExecute(i);
         }
     }
@@ -126,7 +127,9 @@ public class ImageActivity extends AppCompatActivity {
             restartFlag = false;
             //  restartIntent.setClass(ImageActivity, ImageActivity.getClass());
             startActivity(restartIntent);
-        } else deleteFile(fileName);
+        } else {
+//            deleteFile(fileName);
+        }
     }
 
     private void delayExecute(int times) {
@@ -142,21 +145,22 @@ public class ImageActivity extends AppCompatActivity {
     }
 
     private void imageSearch(int num) {
-        if (list.size() > num) {
-            ImageSearchTask test = new ImageSearchTask(new SearchTaskCallBack() {
+        if (useWord.size() > num) {
+//            ImageSearchTask test = new ImageSearchTask(new SearchTaskCallBack() {
+            GoogleSearchTask test = new GoogleSearchTask(new SearchTaskCallBack() {
                 @Override
                 public void onWebSearchCompleted(String result) {
                 }
 
                 @Override
                 public void onImageSearchCompleted(ArrayList<String> result) {
-                    wordtext.setText(list.get(num));
+                    wordtext.setText(useWord.get(num));
                     cv.setText(String.valueOf(num));
-                    logWord(list.get(num), csvFileName);
+                    logWord(useWord.get(num), csvFileName);
 
                     setImageBitmap(result);
 
-                    if (num + 1 == list.size()) {
+                    if (num + 1 == useWord.size()) {
                         new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
                             @Override
                             public void run() {
@@ -168,7 +172,7 @@ public class ImageActivity extends AppCompatActivity {
 
                 }
             }, this);
-            test.execute(list.get(num));
+            test.execute(useWord.get(num));
         }
     }
 
@@ -182,6 +186,7 @@ public class ImageActivity extends AppCompatActivity {
             mGridView.setAdapter(adapter);
         }
     }
+
     private void getNLUResult() {
         // Listの最後に実行される
         NLUCallTask nluTask = new NLUCallTask(this, Constants.ANALYZE_FORMAT.TEXT);
@@ -231,6 +236,12 @@ public class ImageActivity extends AppCompatActivity {
             }
         });
 
+        if(word[0].isEmpty()){
+            for(int i = 0; i < sourceWord.size(); i++){
+                word[i] = sourceWord.get(i);
+            }
+        }
+
         suggest.execute(
                 word[0] + " " + addKanamoji(),
                 word[1] + " " + addKanamoji(),
@@ -254,11 +265,20 @@ public class ImageActivity extends AppCompatActivity {
                 if (!res[i].isEmpty()) listWord.add(res[i]);
             }
             restartIntent.putStringArrayListExtra("listword", listWord);
+            restartIntent.putStringArrayListExtra("sourceWord", sourceWord);
             // ファイルネームの保存
             restartIntent.putExtra("timeLog", timeLog);
             restartIntent.putExtra("csvFileName", csvFileName);
             restartFlag = true;
-        } else toast("ImageActivity:検索ワードがありません");
+        } else {
+            toast("ImageActivity:検索ワードがありません");
+
+            restartIntent.putStringArrayListExtra("listword", sourceWord);
+            // ファイルネームの保存
+            restartIntent.putExtra("timeLog", timeLog);
+            restartIntent.putExtra("csvFileName", csvFileName);
+            restartFlag = true;
+        }
 
         finish();
     }
@@ -354,10 +374,10 @@ public class ImageActivity extends AppCompatActivity {
     public void saveFile(String file, String str) {
 
         // try-with-resources
-        try{
+        try {
             FileOutputStream fileOutputstream = new FileOutputStream(new File(
                     Environment.getExternalStorageDirectory().getPath()
-                            + "/NLUTestApp/" + file),true);
+                            + "/NLUTestApp/" + file), true);
             fileOutputstream.write(str.getBytes());
 
         } catch (IOException e) {
@@ -463,7 +483,7 @@ public class ImageActivity extends AppCompatActivity {
             }
 //            Toast.makeText(getApplicationContext(), reason, Toast.LENGTH_SHORT).show();
             toast(reason);
-            if(listeningTimes < 3)restartListeningService();
+            if (listeningTimes < 3) restartListeningService();
             listeningTimes++;
         }
 
@@ -489,6 +509,7 @@ public class ImageActivity extends AppCompatActivity {
             // 取得した文字列を結合
             String resultsString = "";
 
+            assert results_array != null;
             resultsString += results_array.get(0);
             saveFile(fileName, resultsString);
             // トーストを使って結果表示

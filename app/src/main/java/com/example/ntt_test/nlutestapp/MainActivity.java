@@ -1,9 +1,6 @@
 package com.example.ntt_test.nlutestapp;
 
-import android.content.ActivityNotFoundException;
-import android.content.Context;
 import android.content.Intent;
-import android.media.MediaScannerConnection;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
@@ -20,28 +17,16 @@ import android.widget.Toast;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
-import com.google.gson.JsonParser;
-import com.ibm.watson.natural_language_understanding.v1.NaturalLanguageUnderstanding;
-import com.ibm.watson.natural_language_understanding.v1.model.AnalysisResults;
-import com.ibm.watson.natural_language_understanding.v1.model.AnalyzeOptions;
-import com.ibm.watson.natural_language_understanding.v1.model.CategoriesOptions;
-import com.ibm.watson.natural_language_understanding.v1.model.ConceptsOptions;
-import com.ibm.watson.natural_language_understanding.v1.model.Features;
 
 
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.Locale;
 import java.util.Random;
 
@@ -61,6 +46,7 @@ public class MainActivity extends AppCompatActivity {
     private String textFileName, timeLog, csvFileName;
     private Intent mNextIntent;
     private Boolean listenFlag = true;
+    private ArrayList<String> sourceWord = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -151,6 +137,7 @@ public class MainActivity extends AppCompatActivity {
                     for (int i = 0; i < 4; i++) {
                         if (i < result.getAsJsonArray("concepts").size()) {
                             res[i] = result.getAsJsonArray("concepts").get(i).getAsJsonObject().get("text").getAsString();
+                            sourceWord.add(res[i]); // 元単語
                         } else {
                             res[i] = "";
                         }
@@ -261,6 +248,7 @@ public class MainActivity extends AppCompatActivity {
                 if (!res[i].isEmpty()) listWord.add(res[i]);
             }
             mNextIntent.putStringArrayListExtra("listword", listWord);
+            mNextIntent.putStringArrayListExtra("sourceWord", sourceWord);
             mNextIntent.putExtra("isSuggest", en);
             mNextIntent.putExtra("csvFileName", csvFileName);
             listenFlag = false;

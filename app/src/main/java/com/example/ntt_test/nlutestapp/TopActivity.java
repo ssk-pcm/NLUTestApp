@@ -139,7 +139,7 @@ public class TopActivity extends AppCompatActivity implements CompoundButton.OnC
                 suggestText.setText(aa.toString());
             }
         }, this);
-        gt.execute();
+        gt.execute("猫");
     }
 
     // Checks if external storage is available for read and write

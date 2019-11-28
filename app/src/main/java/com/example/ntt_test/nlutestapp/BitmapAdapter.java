@@ -30,10 +30,10 @@ public class BitmapAdapter extends BaseAdapter {
     private Context context;
 
 
-    public BitmapAdapter(Context context, List<String> objects) {
+    BitmapAdapter(Context context, List<String> imageURL) {
         super();
         mInflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-        imageList.addAll(objects);
+        imageList.addAll(imageURL);
         this.context = context;
 
         // 画面の横幅の半分を計算
@@ -82,8 +82,7 @@ public class BitmapAdapter extends BaseAdapter {
 
     private String addUrl(int number) {
 
-        return String.format(Locale.US,
-                imageList.get(number));
+        return imageList.get(number);
     }
 
 }
